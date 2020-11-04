@@ -21,7 +21,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
         print(f"No files found in given directory {folder_path}!")
         return None
 
-    for f in files_list:
+    for f in files_list[:5]:
         try:
             # Create temporary data frame from file
             temp_dataframe = pd.read_csv(f, header=None, usecols=[0, 1, 2], names=["name", "sex", "count"])
@@ -36,10 +36,23 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
     return table
 
 
+def task2(dataframe: pd.DataFrame):
+    """
+    Count unique names
+    :param: dataframe: Pandas dataframe with all the necessary data
+    :return: Number of unique names
+    """
+
+    unique_names = dataframe.groupby('name').nunique()
+    return len(unique_names)
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
     df_names = task1(folder_path="names", dataframe=df_names)
+
+    print(f"Number of unique names: {task2(df_names)}")
 
 
 if __name__ == "__main__":
