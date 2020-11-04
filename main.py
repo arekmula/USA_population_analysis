@@ -21,7 +21,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
         print(f"No files found in given directory {folder_path}!")
         return None
 
-    for f in files_list[:5]:
+    for f in files_list:
         try:
             # Create temporary data frame from file
             temp_dataframe = pd.read_csv(f, header=None, usecols=[0, 1, 2], names=["name", "sex", "count"])
@@ -47,12 +47,31 @@ def task2(dataframe: pd.DataFrame):
     return len(unique_names)
 
 
+def task3(dataframe: pd.DataFrame):
+    """
+    Count unique names per sex
+    :param: dataframe: Pandas dataframe with all the necessary data
+    :return:
+    number_of_unique_men_names
+    number_of_unique_female_names
+    """
+    unique_names = dataframe.groupby('name').nunique()
+    number_of_unique_men_names = unique_names[unique_names[("count", "F")] >= 1].count()[("count", "F")]
+    number_of_unique_female_names = unique_names[unique_names[("count", "M")] >= 1].count()[("count", "M")]
+
+    return number_of_unique_men_names, number_of_unique_female_names
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
     df_names = task1(folder_path="names", dataframe=df_names)
 
     print(f"Number of unique names: {task2(df_names)}")
+
+    number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
+    print(f"Number of unique men names: {number_of_unique_men_names}")
+    print(f"Number of unique female names: {number_of_unique_female_names}")
 
 
 if __name__ == "__main__":
