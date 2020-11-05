@@ -32,7 +32,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
         except FileNotFoundError:
             print(f"File {f} doesnt exist!")
 
-    table = pd.pivot_table(dataframe, values=["count"], index=["year", "name"], columns=["sex"], aggfunc=np.sum)
+    table = pd.pivot_table(dataframe, values="count", index=["year", "name"], columns=["sex"], aggfunc=np.sum)
     return table
 
 
@@ -56,8 +56,8 @@ def task3(dataframe: pd.DataFrame):
     number_of_unique_female_names
     """
     unique_names = dataframe.groupby('name').nunique()
-    number_of_unique_men_names = unique_names[unique_names[("count", "F")] >= 1].count()[("count", "F")]
-    number_of_unique_female_names = unique_names[unique_names[("count", "M")] >= 1].count()[("count", "M")]
+    number_of_unique_men_names = unique_names[unique_names["F"] >= 1].count()["F"]
+    number_of_unique_female_names = unique_names[unique_names["M"] >= 1].count()["M"]
 
     return number_of_unique_men_names, number_of_unique_female_names
 
