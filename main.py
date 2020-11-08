@@ -134,6 +134,32 @@ def task5(dataframe: pd.DataFrame):
     return birth_per_year_per_sex.index[biggest_ratio_index], birth_per_year_per_sex.index[smallest_ratio_index]
 
 
+def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
+    """
+    Get 1000 most popular names for each sex in. The method should get 1000 most popular names for each year and sex and
+    then sum them up to get 1000 most popular names for each sex.
+    :param: dataframe - dataframe containing all necessary data,
+    :param: number_of_top_popular_names - number of top popular names you want to return,
+    :return: top_female_names_across_all_years,
+    :return: top_male_names_across_all_years,
+    """
+    # First sort by column values and then sort by index value
+    female_names_sorted = (dataframe.sort_values('F', ascending=False)).sort_index(level=[0], ascending=[True])["F"]
+    male_names_sorted = (dataframe.sort_values('M', ascending=False)).sort_index(level=[0], ascending=[True])["M"]
+
+    # Get popular names per year
+    female_names_sorted = female_names_sorted.groupby('year').head(number_of_top_popular_names)
+    male_names_sorted = male_names_sorted.groupby('year').head(number_of_top_popular_names)
+
+    # Get the most popular names across all years
+    top_female_names_across_all_years = (female_names_sorted.groupby('name').sum()).sort_values(ascending=False)
+    top_female_names_across_all_years = top_female_names_across_all_years.head(number_of_top_popular_names)
+    top_male_names_across_all_years = (male_names_sorted.groupby('name').sum()).sort_values(ascending=False)
+    top_male_names_across_all_years = top_male_names_across_all_years.head(number_of_top_popular_names)
+
+    return top_female_names_across_all_years, top_male_names_across_all_years
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
@@ -150,6 +176,7 @@ def main():
     print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
           f" smallest difference: {year_smallest_ratio}")
 
+    top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
     plt.show()
 
 
