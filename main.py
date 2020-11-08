@@ -66,22 +66,16 @@ def task3(dataframe: pd.DataFrame):
     return number_of_unique_men_names, number_of_unique_female_names
 
 
-def task4(dataframe: pd.DataFrame, years):
+def task4(dataframe: pd.DataFrame):
     """
     Create new columns frequency_male and frequency_female and count a frequency of each name per year
-    :param years: list of years
     :param dataframe: dataframe with all necessary data
     :return: dataframe with frequency per sex added
     """
-
+    birth_per_year_per_sex = dataframe.groupby('year').sum()
     dataframe["frequency_female"] = 0
     dataframe["frequency_male"] = 0
-
-    for year in years:
-        total_births_female_per_year = dataframe.loc[(year, ), "F"].sum()
-        total_births_male_per_year = dataframe.loc[(year, ), "M"].sum()
-        dataframe.loc[(year,):, "frequency_female"] = dataframe.loc[(year,):, "F"] / total_births_female_per_year
-        dataframe.loc[(year,):, "frequency_male"] = dataframe.loc[(year,):, "M"] / total_births_male_per_year
+    dataframe[["frequency_female", "frequency_male"]] = dataframe[["F", "M"]]/birth_per_year_per_sex
 
     return dataframe
 
@@ -158,7 +152,7 @@ def main():
     print(f"Number of unique men names: {number_of_unique_men_names}")
     print(f"Number of unique female names: {number_of_unique_female_names}")
 
-    df_names = task4(df_names, years)
+    df_names = task4(df_names)
     year_biggest_ratio, year_smallest_ratio = task5(df_names, years)
     print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
           f" smallest difference: {year_smallest_ratio}")
