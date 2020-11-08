@@ -23,7 +23,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
         return None
 
     years = []
-    for f in files_list[:10]:
+    for f in files_list:
         try:
             # Create temporary data frame from file
             temp_dataframe = pd.read_csv(f, header=None, usecols=[0, 1, 2], names=["name", "sex", "count"])
@@ -36,7 +36,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
         except FileNotFoundError:
             print(f"File {f} doesnt exist!")
 
-    table = pd.pivot_table(dataframe, values="count", index=["year", "name"], columns=["sex"], aggfunc=np.sum)
+    table = pd.pivot(dataframe, values="count", index=["year", "name"], columns=["sex"])
     return table, years
 
 
