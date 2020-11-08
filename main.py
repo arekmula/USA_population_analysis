@@ -138,8 +138,8 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
     """
     Get 1000 most popular names for each sex in. The method should get 1000 most popular names for each year and sex and
     then sum them up to get 1000 most popular names for each sex.
-    :param: dataframe - dataframe containing all necessary data,
-    :param: number_of_top_popular_names - number of top popular names you want to return,
+    :param dataframe - dataframe containing all necessary data,
+    :param number_of_top_popular_names - number of top popular names you want to return,
     :return: top_female_names_across_all_years,
     :return: top_male_names_across_all_years,
     """
@@ -160,6 +160,66 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
     return top_female_names_across_all_years, top_male_names_across_all_years
 
 
+def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: pd.Series, annotate_years: list,
+          name1: str = "Harry", name2: str = "Marilin"):
+    """
+    :param annotate_years: list of years that you want to annotate on a plot
+    :param name2: name that you want to plot
+    :param name1: name that you want to plot
+    :param dataframe: dataframe with all data
+    :param top_female_names: sorted series of top female names from which there will be top1 chosen
+    :param top_male_names: sorted series of top male names from which there will be top1 chosen
+    :return:
+    """
+
+    top_female_name = top_female_names.index[0]
+    top_male_name = top_male_names.index[0]
+
+    dataframe = dataframe.fillna(0)
+    dataframe["total"] = dataframe["F"] + dataframe["M"]
+
+    names = [top_male_name, top_female_name, name1, name2]
+    names_popularity = [top_male_name + " popularity", top_female_name + " popularity", name1 + " popularity",
+                        name2 + " popularity"]
+    top_names_dataframe_per_year = pd.DataFrame(columns=names)
+    top_names_dataframe_per_year = pd.concat([top_names_dataframe_per_year, pd.DataFrame(columns=names_popularity)])
+
+    births_per_year = dataframe["total"].groupby("year").sum()
+
+    dataframe = dataframe.swaplevel(0, 1)
+    # Sort index for faster computing
+    # https://stackoverflow.com/questions/54307300/what-causes-indexing-past-lexsort-depth-warning-in-pandas
+    dataframe = dataframe.sort_index()
+    for name, name_freq in zip(names, names_popularity):
+        top_names_dataframe_per_year[name] = dataframe.loc[(name, )]["total"]
+        top_names_dataframe_per_year[name_freq] = (dataframe.loc[(name, )]["total"] / births_per_year) * 100
+    top_names_dataframe_per_year = top_names_dataframe_per_year.fillna(0)
+
+    fig, ax = plt.subplots(1, 1)
+    fig.suptitle("Zadanie 7")
+    # Add secondary y axis
+    ax2 = ax.twinx()
+    top_names_dataframe_per_year.plot(y=names, ax=ax)
+    top_names_dataframe_per_year.plot(y=names_popularity, ax=ax2, style='--')
+
+    ax.set_ylabel("Liczba nadanych imion")
+    ax.set_xlabel("Rok")
+    ax.legend(loc='upper left')
+
+    # Annotate requested years with corresponding values
+    for year in annotate_years:
+        for name in names:
+            try:
+                ax.annotate(f"{name}: {top_names_dataframe_per_year.loc[year, name]}",
+                            (year, top_names_dataframe_per_year.loc[year, name]),
+                            arrowprops=dict(facecolor='black', arrowstyle="-"))
+            except KeyError as k:
+                print(f"No data about this year: {k}! SKIPPING")
+
+    ax2.set_ylabel("Popularnosc imienia [%]")
+    ax2.legend(loc='upper right')
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
@@ -177,6 +237,8 @@ def main():
           f" smallest difference: {year_smallest_ratio}")
 
     top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
+    task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
+          annotate_years=[1940, 1980, 2019])
     plt.show()
 
 
