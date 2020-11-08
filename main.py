@@ -163,6 +163,8 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
 def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: pd.Series, annotate_years: list,
           name1: str = "Harry", name2: str = "Marilin"):
     """
+    Plot changes for Harry, Marilin and top female and male names. On left Y axis plot how many times each name was given
+    in a year. On the right Y axis plot popularity of each name
     :param annotate_years: list of years that you want to annotate on a plot
     :param name2: name that you want to plot
     :param name1: name that you want to plot
@@ -220,6 +222,44 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     ax2.legend(loc='upper right')
 
 
+def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: pd.Series):
+    """
+    Plot sum of popularity of top 1000 names through years.
+    :param dataframe: dataframe with all necessary data
+    :param top_female_names: series with most popular female names
+    :param top_male_names: series with most popular male names
+    :return:
+    """
+
+    dataframe = dataframe.fillna(0)
+    # Sum female and male names per year
+    df_year_changes = dataframe.groupby('year').sum()
+    df_year_changes["Top 1000 F names %"] = 0
+    df_year_changes["Top 1000 M names %"] = 0
+
+    # Swap year with data for better iterating
+    dataframe = dataframe.swaplevel(0, 1)
+    # Sort index for faster computing
+    dataframe = dataframe.sort_index()
+
+    # Find all top 1000 names and sum them by years
+    top_female_names_per_year_sum = dataframe.loc[top_female_names.index].groupby("year").sum()["F"]
+    top_male_names_per_year_sum = dataframe.loc[top_male_names.index].groupby("year").sum()["M"]
+
+    # Calculate popularity
+    df_year_changes["Top 1000 F names %"] = (top_female_names_per_year_sum/df_year_changes["F"]) * 100
+    df_year_changes["Top 1000 M names %"] = (top_male_names_per_year_sum/df_year_changes["M"]) * 100
+
+    fig, ax = plt.subplots(1, 1)
+    df_year_changes.plot(y=["Top 1000 F names %", "Top 1000 M names %"], ax=ax)
+
+    fig.suptitle("Udzial 1000 najpopularniejszych imion na przestrzeni lat")
+    ax.set_ylabel("Zsumowana popularnosc 1000 najpopularniejszych imion [%]")
+    ax.set_xlabel("Rok")
+    ax.legend(["Imiona kobiece", "Imiona meskie"])
+    ax.grid(axis="both")
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
@@ -232,13 +272,17 @@ def main():
     print(f"Number of unique female names: {number_of_unique_female_names}")
 
     df_names = task4(df_names)
+
     year_biggest_ratio, year_smallest_ratio = task5(df_names)
     print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
           f" smallest difference: {year_smallest_ratio}")
 
     top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
+
     task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
           annotate_years=[1940, 1980, 2019])
+
+    task8(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names)
     plt.show()
 
 
