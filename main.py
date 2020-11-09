@@ -424,21 +424,28 @@ def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, names_to_found=2, 
     lower_years = np.arange(years_lower_range[0], years_lower_range[1])
     upper_years = np.arange(years_upper_range[0], years_upper_range[1])
     years = np.concatenate((lower_years, upper_years))
-    # Compute Female to Male ratio in years (1880-1920) and Male to Female ratio in years (2000-2020)
+    # Compute Female to Male ratio in years (1880-1920) and Female to Male ratio in years (2000-2020)
     df_unisex_names.loc[(lower_years,), "F/M lower years"] = (df_unisex_names.loc[(lower_years,), "F"]
                                                               / df_unisex_names.loc[(lower_years,), "M"])
     df_unisex_names.loc[(upper_years,), "M/F upper years"] = (df_unisex_names.loc[(upper_years,), "M"]
                                                               / df_unisex_names.loc[(upper_years,), "F"])
-    # Aggregate data in two ranges. In lower range I need only F/M ratio and in upper range I need M/F ratio. Then fit
-    # F/M ratio in lower years and M/F ratio in upper years to corresponding names
+    # Aggregate data in two ranges. Then fit F/M ratio in lower years and F/M ratio in upper years to corresponding
+    # names
     df_unisex_names_aggregated = (df_unisex_names.loc[(lower_years,), ["F/M lower years"]]).groupby('name').sum()
     df_unisex_names_aggregated["M/F upper years"] = (df_unisex_names.loc[(upper_years,),
                                                                          ["M/F upper years"]]).groupby('name').sum()
 
-    df_unisex_names_aggregated["std_dev"] = df_unisex_names_aggregated.std(axis=1)
-    name = df_unisex_names_aggregated.idxmax()["std_dev"]
+    # Get part of dataframe where F/M in lower years where greater than 1
+    # Compute the difference between F/M in lower years and F/M in upper years
+    df_unisex_names_aggregated["diff"] = df_unisex_names_aggregated["F/M lower years"] + df_unisex_names_aggregated["M/F upper years"]
 
-    print(df_unisex_names_aggregated.loc[name, :])
+    forgotten_female_names = []
+    for i in range(names_to_found-1):
+        name = df_unisex_names_aggregated.idxmax()["diff"]
+        df_unisex_names_aggregated.loc[name, "diff"] = 0
+        forgotten_female_names.append(name)
+
+    print(df_unisex_names_aggregated.loc[forgotten_female_names, :])
 
 
 
