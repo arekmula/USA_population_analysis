@@ -34,7 +34,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
             print(f"File {f} doesnt exist!")
 
     table = pd.pivot(dataframe, values="count", index=["year", "name"], columns=["sex"])
-    return table
+    return table, dataframe
 
 
 def task2(dataframe: pd.DataFrame):
@@ -84,7 +84,6 @@ def task5(dataframe: pd.DataFrame):
     - number of births in year
     - birth of females to birth of males ratio.
     Which year had the biggest and the smallest difference between birth of male and female
-    :param years: list of years
     :param dataframe: dataframe with all necessary data
     :return: year_biggest_ratio: year of the biggest difference between birth of male and female
     :return: year_smallest_ratio: year of the smallest difference between birth of male and female
@@ -163,8 +162,8 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
 def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: pd.Series, annotate_years: list,
           name1: str = "Harry", name2: str = "Marilin"):
     """
-    Plot changes for Harry, Marilin and top female and male names. On left Y axis plot how many times each name was given
-    in a year. On the right Y axis plot popularity of each name
+    Plot changes for Harry, Marilin and top female and male names. On left Y axis plot how many times each name was
+    given in a year. On the right Y axis plot popularity of each name
     :param annotate_years: list of years that you want to annotate on a plot
     :param name2: name that you want to plot
     :param name1: name that you want to plot
@@ -260,10 +259,117 @@ def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     ax.grid(axis="both")
 
 
+def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False, number_of_char_trends_to_plot=3):
+    """
+    Verify hypothesis that density of last letter in men names changed dramatically.
+    - Aggregate data considering year, sex and the last letter
+    - Distinct data for 1910, 1960, 2015
+    - Normalize data considering sum of births in each year
+    - Create bar plot with popularity of each letter and each sex. Take a note which letter had the biggest difference
+     between 1910 and 2015
+    - For 3 letters with highest difference plot a trend
+    :param number_of_char_trends_to_plot: How many characters trends you want to plot
+    :param stacked: should bar plot with last character names be stacked or not
+    :param distinct_years: Years which you want to consider at bar plot. The first and the last value will be used for
+    determining which character had the biggest change across years
+    :param dataframe_unpivoted: Dataframe containing all data
+    :return:
+    """
+
+    if len(distinct_years) < 2:
+        print("You have to give at least 2 years to distinguish!")
+        return None
+
+    df_last_characters = pd.DataFrame(columns=["year", "last_character", "sex", "count"])
+    df_last_characters[["year", "sex", "count"]] = dataframe_unpivoted[["year", "sex", "count"]]
+    # Get last character from each name
+    df_last_characters["last_character"] = [name[-1] for name in dataframe_unpivoted["name"].values]
+
+    # Use pivot_table because of duplicate values that has to be summed up.
+    # For example (1886, a) occurred multiple times and has to be summed
+    df_last_characters = pd.pivot_table(df_last_characters, values="count", index=["year", "last_character"],
+                                        columns=["sex"], aggfunc=np.sum)
+    df_last_characters = df_last_characters.fillna(0).astype(int)
+
+    # Compute normalized value for each year and sex
+    df_last_characters[["F normalized", "M normalized"]] = (df_last_characters[["F", "M"]]
+                                                            / df_last_characters.groupby('year').sum())
+
+    # Get dataframe with years that you want to plot
+    df_last_characters_distinct_years = pd.DataFrame(df_last_characters.loc[distinct_years])
+    # Swap levels so character is on index 0
+    df_last_characters_distinct_years = df_last_characters_distinct_years.swaplevel(0, 1)
+    # Sort index for faster computing
+    df_last_characters_distinct_years = df_last_characters_distinct_years.sort_index()
+
+    fig, ax = plt.subplots(2, 1)
+
+    df_last_characters_distinct_years.groupby("last_character")["F normalized"].head(1000).unstack(level=1).plot.bar(
+        stacked=stacked, ax=ax[0])
+    df_last_characters_distinct_years.groupby("last_character")["M normalized"].head(1000).unstack(level=1).plot.bar(
+        stacked=stacked, ax=ax[1])
+
+    fig.suptitle("Zad9 - Ostatnia litera imienia:")
+    ax[0].set_title("W imionach kobiecych")
+    ax[0].set_xlabel("Ostatnia litera imienia")
+    ax[0].set_ylabel("Popularnosc litery")
+
+    ax[1].set_title("W imionach meskich")
+    ax[1].set_xlabel("Ostatnia litera imienia")
+    ax[1].set_ylabel("Popularnosc litery")
+
+    # Get list of all last characters from dataframe index
+    last_characters = df_last_characters_distinct_years.index.get_level_values(0).unique()
+    # Create dataframe with 2 distinguished years which will contain information about difference between those 2 years
+    df_year_difference = pd.DataFrame(df_last_characters_distinct_years.loc[(last_characters,
+                                                                             (distinct_years[0], distinct_years[-1])),
+                                                                            ["F normalized", "M normalized"]])
+    # Change sign every 2 rows (in this case for all rows with 1910 year) so you can use .groupby().sum()
+    df_year_difference.iloc[::2, :] = df_year_difference.iloc[::2, :] * -1
+    # Calculate the difference for all characters between year 1910 and 2015
+    df_year_difference = pd.DataFrame(np.abs((df_year_difference.groupby('last_character')).sum()))
+
+    # Find 3 letters with biggest change between year 1910 and 2015 for female and male
+    female_chars_biggest_difference = []
+    male_chars_biggest_difference = []
+    for i in range(number_of_char_trends_to_plot):
+        female_char_index = df_year_difference.idxmax()["F normalized"]
+        df_year_difference.loc[female_char_index, "F normalized"] = 0  # Set to zero so it's skipped in next iteration
+        female_chars_biggest_difference.append(female_char_index)
+
+        male_char_index = df_year_difference.idxmax()["M normalized"]
+        df_year_difference.loc[male_char_index, "M normalized"] = 0
+        male_chars_biggest_difference.append(male_char_index)
+
+    print(f"Najwiekszą zmianę dla imion kobiecych odnotowano dla liter: {female_chars_biggest_difference}")
+    print(f"Najwiekszą zmianę dla imion meskich odnotowano dla liter: {male_chars_biggest_difference}")
+
+    fig, ax = plt.subplots(2, 1)
+    fig.suptitle("Zad9 - Popularność ostatniej litery imienia:")
+    df_last_characters = df_last_characters.swaplevel(0, 1)
+    df_last_characters = df_last_characters.sort_index()
+
+    for female_char in female_chars_biggest_difference:
+        df_last_characters.loc[(female_char, ), "F normalized"].plot(ax=ax[0])
+
+    ax[0].legend(female_chars_biggest_difference, loc='upper left')
+    ax[0].set_title("Wsród kobiet")
+    ax[0].set_xlabel("Rok")
+    ax[0].set_ylabel("Popularność litery")
+
+    for male_char in male_chars_biggest_difference:
+        df_last_characters.loc[(male_char, ), "M normalized"].plot(ax=ax[1])
+
+    ax[1].legend(male_chars_biggest_difference, loc='upper left')
+    ax[1].set_title("Wsród mężczyzn")
+    ax[1].set_xlabel("Rok")
+    ax[1].set_ylabel("Popularność litery")
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
-    df_names = task1(folder_path="names", dataframe=df_names)
+    df_names, dataframe_no_pivot = task1(folder_path="names", dataframe=df_names)
 
     print(f"Number of unique names: {task2(df_names)}")
 
@@ -283,6 +389,7 @@ def main():
           annotate_years=[1940, 1980, 2019])
 
     task8(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names)
+    task9(dataframe_unpivoted=dataframe_no_pivot, distinct_years=[1910, 1960, 2015])
     plt.show()
 
 
