@@ -8,6 +8,7 @@ import re
 def task1(dataframe: pd.DataFrame, folder_path: str = None):
     """
     Read data from all files to single dataframe using Pandas
+
     :param folder_path: path to folder with files containing name info
     :param dataframe: Input dataframe with columns: year, name, sex, count
     :return: Output pivot_table dataframe, list of years
@@ -40,6 +41,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
 def task2(dataframe: pd.DataFrame):
     """
     Count unique names
+
     :param: dataframe: Pandas dataframe with all the necessary data
     :return: Number of unique names
     """
@@ -51,6 +53,7 @@ def task2(dataframe: pd.DataFrame):
 def task3(dataframe: pd.DataFrame):
     """
     Count unique names per sex
+
     :param: dataframe: Pandas dataframe with all the necessary data
     :return:
     number_of_unique_men_names
@@ -66,6 +69,7 @@ def task3(dataframe: pd.DataFrame):
 def task4(dataframe: pd.DataFrame):
     """
     Create new columns frequency_male and frequency_female and count a frequency of each name per year
+
     :param dataframe: dataframe with all necessary data
     :return: dataframe with frequency per sex added
     """
@@ -84,6 +88,7 @@ def task5(dataframe: pd.DataFrame):
     - number of births in year
     - birth of females to birth of males ratio.
     Which year had the biggest and the smallest difference between birth of male and female
+
     :param dataframe: dataframe with all necessary data
     :return: year_biggest_ratio: year of the biggest difference between birth of male and female
     :return: year_smallest_ratio: year of the smallest difference between birth of male and female
@@ -137,8 +142,9 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
     """
     Get 1000 most popular names for each sex in. The method should get 1000 most popular names for each year and sex and
     then sum them up to get 1000 most popular names for each sex.
-    :param dataframe - dataframe containing all necessary data,
-    :param number_of_top_popular_names - number of top popular names you want to return,
+
+    :param dataframe: dataframe containing all necessary data,
+    :param number_of_top_popular_names: number of top popular names you want to return,
     :return: top_female_names_across_all_years,
     :return: top_male_names_across_all_years,
     """
@@ -164,6 +170,7 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     """
     Plot changes for Harry, Marilin and top female and male names. On left Y axis plot how many times each name was
     given in a year. On the right Y axis plot popularity of each name
+
     :param annotate_years: list of years that you want to annotate on a plot
     :param name2: name that you want to plot
     :param name1: name that you want to plot
@@ -224,6 +231,7 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
 def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: pd.Series):
     """
     Plot sum of popularity of top 1000 names through years.
+
     :param dataframe: dataframe with all necessary data
     :param top_female_names: series with most popular female names
     :param top_male_names: series with most popular male names
@@ -268,6 +276,7 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
     - Create bar plot with popularity of each letter and each sex. Take a note which letter had the biggest difference
      between 1910 and 2015
     - For 3 letters with highest difference plot a trend
+
     :param number_of_char_trends_to_plot: How many characters trends you want to plot
     :param stacked: should bar plot with last character names be stacked or not
     :param distinct_years: Years which you want to consider at bar plot. The first and the last value will be used for
@@ -366,6 +375,31 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
     ax[1].set_ylabel("Popularność litery")
 
 
+def task10(dataframe: pd.DataFrame):
+    """
+    Find names that were given both to females and males. Note most popular male and female name.
+
+    :param dataframe: dataframe containing all data
+    :return unisex_names: list of names that are both female and male
+    :return most_popular_female_unisex_name: most popular female name that is also a male name
+    :return most_popular_male_unisex_name: most popular male name that is also a female name
+    """
+    # Count in how many years each name existed in each sex. If a name has 0 count in one of the sex column, that means
+    # that it never existed as name in this sex
+    df_names_count = dataframe.groupby('name').count()
+    unisex_names = pd.DataFrame(df_names_count.loc[(df_names_count["F"] > 0) & (df_names_count["M"] > 0)]).index.values
+    print(f"Imiona unisex: {unisex_names}")
+
+    dataframe = dataframe.swaplevel(0, 1)
+    dataframe = dataframe.sort_index()
+    # I could use sum() at the very beginning, but .count() is much faster. So I decided to use sum() on smaller data
+    # after I found unisex names
+    unisex_names_sum = (dataframe.loc[(unisex_names, ), ]).groupby('name').sum()
+    most_popular_female_unisex_name, most_popular_male_unisex_name = unisex_names_sum.idxmax()
+
+    return unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
@@ -389,7 +423,13 @@ def main():
           annotate_years=[1940, 1980, 2019])
 
     task8(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names)
+
     task9(dataframe_unpivoted=dataframe_no_pivot, distinct_years=[1910, 1960, 2015])
+
+    unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
+    print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
+          f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
+
     plt.show()
 
 
