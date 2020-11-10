@@ -385,17 +385,40 @@ def task10(dataframe: pd.DataFrame):
     :return most_popular_male_unisex_name: most popular male name that is also a female name
     """
     # Count in how many years each name existed in each sex. If a name has 0 count in one of the sex column, that means
-    # that it never existed as name in this sex
-    df_names_count = dataframe.groupby('name').count()
+    # that it never existed as name in this sex and it's not unisex name
+    # I could use sum() at the very beginning, but .count() is much faster. So I decided to use count() to get the
+    # unisex names first
+    df_names_count = (dataframe.groupby('name').count()).astype(int)
     unisex_names = pd.DataFrame(df_names_count.loc[(df_names_count["F"] > 0) & (df_names_count["M"] > 0)]).index.values
     print(f"Imiona unisex: {unisex_names}")
 
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
-    # I could use sum() at the very beginning, but .count() is much faster. So I decided to use sum() on smaller data
-    # after I found unisex names
-    unisex_names_sum = (dataframe.loc[(unisex_names,), ]).groupby('name').sum()
-    most_popular_female_unisex_name, most_popular_male_unisex_name = unisex_names_sum.idxmax()
+
+    # ******************************** README README README README README *********************************************
+    # I found that this method of looking for most popular unisex name is 2 times faster than slicing from dataframe
+    # only unisex names, calculating sum for them and then finding indmax(). The computational complexity of slicing was
+    # very high. Altough if you want to see previous method:
+    # *************************************************************************************************
+    # unisex_names_sum = (dataframe.loc[(unisex_names,), ]).groupby('name').sum()
+    # most_popular_female_unisex_name, most_popular_male_unisex_name = unisex_names_sum.idxmax()
+    # *************************************************************************************************
+    df_summed_names = dataframe.sum(axis=0, level=0)
+    # Sort names by Female sum, so Most popular female name is on top
+    df_summed_names = df_summed_names.sort_values("F", ascending=False)
+    most_popular_female_unisex_name = None
+    # Check which most popular female name is in unisex_names
+    for name in df_summed_names.index.values:
+        if name in unisex_names:
+            most_popular_female_unisex_name = name
+            break
+
+    df_summed_names = df_summed_names.sort_values("M", ascending=False)
+    most_popular_male_unisex_name = None
+    for name in df_summed_names.index.values:
+        if name in unisex_names:
+            most_popular_male_unisex_name = name
+            break
 
     return unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name
 
@@ -507,7 +530,7 @@ def main():
     print(f"Number of unique men names: {number_of_unique_men_names}")
     print(f"Number of unique female names: {number_of_unique_female_names}")
 
-    df_names = task4(df_names)
+    df_names_freq = task4(df_names)
 
     year_biggest_ratio, year_smallest_ratio = task5(df_names)
     print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
