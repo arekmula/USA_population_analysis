@@ -399,7 +399,7 @@ def task10(dataframe: pd.DataFrame):
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
 
-    df_unisex_names = (dataframe.loc[(unisex_names,), ])
+    df_unisex_names = (dataframe.loc[(unisex_names,), ])  # TODO: This is so time consuming
     unisex_names_sum = df_unisex_names.groupby('name').sum()
     most_popular_female_unisex_name = unisex_names_sum.idxmax()["F"]
     most_popular_male_unisex_name = unisex_names_sum.idxmax()["M"]
