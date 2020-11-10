@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
 import re
+import time
 
 
 def task1(dataframe: pd.DataFrame, folder_path: str = None):
@@ -400,33 +401,36 @@ def task10(dataframe: pd.DataFrame):
     # only unisex names, calculating sum for them and then finding indmax(). The computational complexity of slicing was
     # very high. Altough if you want to see previous method:
     # *************************************************************************************************
-    # unisex_names_sum = (dataframe.loc[(unisex_names,), ]).groupby('name').sum()
-    # most_popular_female_unisex_name, most_popular_male_unisex_name = unisex_names_sum.idxmax()
+    df_unisex_names = (dataframe.loc[(unisex_names,), ])
+    unisex_names_sum = df_unisex_names.groupby('name').sum()
+    most_popular_female_unisex_name = unisex_names_sum.idxmax()["F"]
+    most_popular_male_unisex_name = unisex_names_sum.idxmax()["M"]
     # *************************************************************************************************
-    df_summed_names = dataframe.sum(axis=0, level=0)
-    # Sort names by Female sum, so Most popular female name is on top
-    df_summed_names = df_summed_names.sort_values("F", ascending=False)
-    most_popular_female_unisex_name = None
-    # Check which most popular female name is in unisex_names
-    for name in df_summed_names.index.values:
-        if name in unisex_names:
-            most_popular_female_unisex_name = name
-            break
+    # df_summed_names = dataframe.sum(axis=0, level=0)
+    # # Sort names by Female sum, so Most popular female name is on top
+    # df_summed_names = df_summed_names.sort_values("F", ascending=False)
+    # most_popular_female_unisex_name = None
+    # # Check which most popular female name is in unisex_names
+    # for name in df_summed_names.index.values:
+    #     if name in unisex_names:
+    #         most_popular_female_unisex_name = name
+    #         break
+    #
+    # df_summed_names = df_summed_names.sort_values("M", ascending=False)
+    # most_popular_male_unisex_name = None
+    # for name in df_summed_names.index.values:
+    #     if name in unisex_names:
+    #         most_popular_male_unisex_name = name
+    #         break
 
-    df_summed_names = df_summed_names.sort_values("M", ascending=False)
-    most_popular_male_unisex_name = None
-    for name in df_summed_names.index.values:
-        if name in unisex_names:
-            most_popular_male_unisex_name = name
-            break
-
-    return unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name
+    return unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name, df_unisex_names
 
 
-def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, number_names_to_found=3, years_lower_range=(1880, 1920),
-           years_upper_range=(2000, 2020)):
+def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, df_unisex_names=pd.DataFrame,
+           number_names_to_found=3, years_lower_range=(1880, 1920), years_upper_range=(2000, 2020)):
     """
     Find most popular names that were female/male names and then became male/female names
+    :param df_unisex_names:
     :param years_upper_range: lower range of years for which F/M ratio is computed
     :param years_lower_range: upper range of years for which M/F ratio is computed
     :param number_names_to_found: number of names to be found
@@ -435,11 +439,12 @@ def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, number_names_to_fo
     :return: names with smallest standard deviation between sex and year range, but at the same time with quite big
     number of names given
     """
-
+    start_time = time.time()
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
     # Select only unisex names
-    df_unisex_names = dataframe.loc[(unisex_names,), :]
+    # TODO: Use sliced dataframe from TASK 10
+    print(f"TASK11 slicing: {time.time()-start_time} ")
     # Fill NaN with 1 to allow dividing
     df_unisex_names = pd.DataFrame(df_unisex_names.fillna(1))
     df_unisex_names = df_unisex_names.swaplevel(0, 1)
@@ -454,6 +459,7 @@ def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, number_names_to_fo
                                             / df_unisex_names.loc[(years,), "M"])
     df_unisex_names.loc[(years,), "M/F"] = (df_unisex_names.loc[(years,), "M"]
                                             / df_unisex_names.loc[(years,), "F"])
+    print(f"TASK11 F/M and M/F ratio: {time.time()-start_time} ")
 
     # Choose part of dataframe where F/M ratio is greater than M/F ratio in lower years
     female_names_lower_years = (df_unisex_names[df_unisex_names["F/M"]
@@ -461,10 +467,12 @@ def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, number_names_to_fo
     # Choose part of dataframe where F/M ratio is greater than M/F ratio in lower years
     male_names_upper_years = (df_unisex_names[df_unisex_names["F/M"]
                                               < df_unisex_names["M/F"]]).loc[(upper_years,), "M/F"]
+    print(f"TASK11 choosing: {time.time()-start_time} ")
 
     # Sum F/M ratio per name in lower years range and M/F ratio per name in upper years
     df_unisex_names_aggregated = pd.DataFrame(female_names_lower_years.groupby('name').sum())
     df_unisex_names_aggregated["M/F"] = male_names_upper_years.groupby('name').sum()
+    print(f"TASK11 sum: {time.time()-start_time} ")
 
     # Sort dataframe by F/M ratio to choose strongly female names
     df_unisex_names_sorted_FM = df_unisex_names_aggregated.sort_values(["F/M"], ascending=False)
@@ -477,7 +485,9 @@ def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, number_names_to_fo
     # Calculate sum of that indexes. Then remove NaN
     df_unisex_names_sorted_FM["index sum"] = (df_unisex_names_sorted_FM["F/M index"]
                                               + df_unisex_names_sorted_MF["M/F index"])
+    print(f"TASK11 index sum: {time.time()-start_time} ")
     df_unisex_names_sorted_FM = df_unisex_names_sorted_FM[df_unisex_names_sorted_FM["M/F"] > 0]
+    print(f"TASK11 choosing sum: {time.time()-start_time} ")
     # Sort dataframe by index sum in ascending order. The smaller index sum then the more impact the name had in both
     # sex. Choose 20 names with lowest index sum
     df_unisex_names_sorted_FM = df_unisex_names_sorted_FM.sort_values("index sum").head(20)
@@ -490,6 +500,7 @@ def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, number_names_to_fo
     # Compute standard deviation between F/M and M/F then sort by smallest std dev, to distinguish names
     # that were almost at the same level of popularity between sex.
     df_unisex_names_sorted_FM["std_dev"] = df_unisex_names_sorted_FM[["F/M", "M/F"]].std(axis=1)
+    print(f"TASK11 std_dev: {time.time()-start_time} ")
     df_unisex_names_sorted_FM = df_unisex_names_sorted_FM.sort_values("std_dev", ascending=True)
     forgotten_female_names = df_unisex_names_sorted_FM.index.values[:number_names_to_found]
     print(f"{number_names_to_found} Najbardziej zapomniane imiona zenskie, ktore obecnie wystepuja jako meskie:"
@@ -545,11 +556,14 @@ def main():
 
     task9(dataframe_unpivoted=dataframe_no_pivot, distinct_years=[1910, 1960, 2015])
 
-    unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
+    start_time = time.time()
+    unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name, df_unisex_names = task10(df_names)
     print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
           f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
 
-    forgotten_female_unisex_names = task11(dataframe=df_names, unisex_names=unisex_names, number_names_to_found=2)
+    forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names,
+                                           unisex_names=unisex_names, number_names_to_found=2)
+    print(f"Calkowity czas {time.time()-start_time}")
 
     plt.show()
 
