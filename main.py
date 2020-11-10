@@ -13,7 +13,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
     :param dataframe: Input dataframe with columns: year, name, sex, count
     :return: Output pivot_table dataframe, list of years
     """
-
+    print("Starting TASK 1")
     if folder_path is None or folder_path == "":
         files_list = [f for f in glob.glob("*.txt") if "yob" in f]
     else:
@@ -45,7 +45,7 @@ def task2(dataframe: pd.DataFrame):
     :param: dataframe: Pandas dataframe with all the necessary data
     :return: Number of unique names
     """
-
+    print("Starting TASK 2")
     unique_names = dataframe.groupby('name').nunique()
     return len(unique_names)
 
@@ -59,6 +59,7 @@ def task3(dataframe: pd.DataFrame):
     number_of_unique_men_names
     number_of_unique_female_names
     """
+    print("Starting TASK 3")
     unique_names = dataframe.groupby('name').nunique()
     number_of_unique_men_names = unique_names[unique_names["M"] >= 1].count()["M"]
     number_of_unique_female_names = unique_names[unique_names["F"] >= 1].count()["F"]
@@ -73,6 +74,7 @@ def task4(dataframe: pd.DataFrame):
     :param dataframe: dataframe with all necessary data
     :return: dataframe with frequency per sex added
     """
+    print("Starting TASK 4")
     # Calculate sum of births per year and sex
     birth_per_year_per_sex = dataframe.groupby('year').sum()
     dataframe["frequency_female"] = 0
@@ -93,7 +95,7 @@ def task5(dataframe: pd.DataFrame):
     :return: year_biggest_ratio: year of the biggest difference between birth of male and female
     :return: year_smallest_ratio: year of the smallest difference between birth of male and female
     """
-
+    print("Starting TASK 5")
     # Calculate sum of births per year and sex
     birth_per_year_per_sex = dataframe[["F", "M"]].groupby('year').sum()
     birth_per_year_per_sex["total"] = birth_per_year_per_sex["F"] + birth_per_year_per_sex["M"]
@@ -148,6 +150,7 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
     :return: top_female_names_across_all_years,
     :return: top_male_names_across_all_years,
     """
+    print("Starting TASK 6")
     # First sort by column values and then sort by index value
     female_names_sorted = (dataframe.sort_values('F', ascending=False)).sort_index(level=[0], ascending=[True])["F"]
     male_names_sorted = (dataframe.sort_values('M', ascending=False)).sort_index(level=[0], ascending=[True])["M"]
@@ -179,7 +182,7 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     :param top_male_names: sorted series of top male names from which there will be top1 chosen
     :return:
     """
-
+    print("Starting TASK 7")
     top_female_name = top_female_names.index[0]
     top_male_name = top_male_names.index[0]
 
@@ -237,7 +240,7 @@ def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     :param top_male_names: series with most popular male names
     :return:
     """
-
+    print("Starting TASK 8")
     dataframe = dataframe.fillna(0)
     # Sum female and male names per year
     df_year_changes = dataframe.groupby('year').sum()
@@ -284,7 +287,7 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
     :param dataframe_unpivoted: Dataframe containing all data
     :return:
     """
-
+    print("Starting TASK 9")
     if len(distinct_years) < 2:
         print("You have to give at least 2 years to distinguish!")
         return None
@@ -384,43 +387,48 @@ def task10(dataframe: pd.DataFrame):
     :return most_popular_female_unisex_name: most popular female name that is also a male name
     :return most_popular_male_unisex_name: most popular male name that is also a female name
     """
+    print("Starting TASK 10")
     # Count in how many years each name existed in each sex. If a name has 0 count in one of the sex column, that means
-    # that it never existed as name in this sex
-    df_names_count = dataframe.groupby('name').count()
+    # that it never existed as name in this sex and it's not unisex name
+    # I could use sum() at the very beginning, but .count() is much faster. So I decided to use count() to get the
+    # unisex names first
+    df_names_count = (dataframe.groupby('name').count()).astype(int)
     unisex_names = pd.DataFrame(df_names_count.loc[(df_names_count["F"] > 0) & (df_names_count["M"] > 0)]).index.values
     print(f"Imiona unisex: {unisex_names}")
 
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
-    # I could use sum() at the very beginning, but .count() is much faster. So I decided to use sum() on smaller data
-    # after I found unisex names
-    unisex_names_sum = (dataframe.loc[(unisex_names,), ]).groupby('name').sum()
-    most_popular_female_unisex_name, most_popular_male_unisex_name = unisex_names_sum.idxmax()
 
-    return unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name
+    df_unisex_names = (dataframe.loc[(unisex_names,), ])  # TODO: This is so time consuming
+    unisex_names_sum = df_unisex_names.groupby('name').sum()
+    most_popular_female_unisex_name = unisex_names_sum.idxmax()["F"]
+    most_popular_male_unisex_name = unisex_names_sum.idxmax()["M"]
+
+    return unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name,
 
 
-def task11(dataframe: pd.DataFrame, unisex_names: np.ndarray, number_names_to_found=3, years_lower_range=(1880, 1920),
-           years_upper_range=(2000, 2020)):
+def task11(dataframe: pd.DataFrame,  df_unisex_names=pd.DataFrame, number_names_to_found=3,
+           years_lower_range=(1880, 1920), years_upper_range=(2000, 2020)):
     """
     Find most popular names that were female/male names and then became male/female names
+    :param df_unisex_names: dataframe containing information only about unisex names
     :param years_upper_range: lower range of years for which F/M ratio is computed
     :param years_lower_range: upper range of years for which M/F ratio is computed
     :param number_names_to_found: number of names to be found
     :param dataframe: dataframe containing all data
-    :param unisex_names: names that are both female and male
     :return: names with smallest standard deviation between sex and year range, but at the same time with quite big
     number of names given
     """
-
+    print("Starting TASK 11")
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
-    # Select only unisex names
-    df_unisex_names = dataframe.loc[(unisex_names,), :]
+
     # Fill NaN with 1 to allow dividing
-    df_unisex_names = pd.DataFrame(df_unisex_names.fillna(1))
+    df_unisex_names = df_unisex_names.fillna(1)
+    # Swap levels so year is the first level
     df_unisex_names = df_unisex_names.swaplevel(0, 1)
     df_unisex_names = df_unisex_names.sort_index()
+
     # Get list of years created from given range
     lower_years = np.arange(years_lower_range[0], years_lower_range[1])
     upper_years = np.arange(years_upper_range[0], years_upper_range[1])
@@ -507,7 +515,7 @@ def main():
     print(f"Number of unique men names: {number_of_unique_men_names}")
     print(f"Number of unique female names: {number_of_unique_female_names}")
 
-    df_names = task4(df_names)
+    df_names_freq = task4(df_names)
 
     year_biggest_ratio, year_smallest_ratio = task5(df_names)
     print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
@@ -522,11 +530,11 @@ def main():
 
     task9(dataframe_unpivoted=dataframe_no_pivot, distinct_years=[1910, 1960, 2015])
 
-    unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
+    unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
     print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
           f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
 
-    forgotten_female_unisex_names = task11(dataframe=df_names, unisex_names=unisex_names, number_names_to_found=2)
+    forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names, number_names_to_found=2)
 
     plt.show()
 
