@@ -128,6 +128,7 @@ def task5(dataframe: pd.DataFrame):
     smallest_ratio_index = np.argmin(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
                                             - birth_per_year_per_sex["Female to Male birth ratio"]))
 
+    # TODO: Fix text visualization on plot
     ax[1].annotate(f"Najwieksza roznica: {birth_per_year_per_sex.index[biggest_ratio_index]}",
                    (birth_per_year_per_sex.index[biggest_ratio_index],
                     birth_per_year_per_sex.iloc[biggest_ratio_index, 3]),
@@ -217,7 +218,7 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     ax.set_xlabel("Rok")
     ax.legend(loc='upper left')
 
-    # Annotate requested years with corresponding values TODO: Fix arrows
+    # Annotate requested years with corresponding values
     xytext_positions = [-7, -5, -2]
     for year in annotate_years:
         for name, xytext_position in zip(names, xytext_positions):
@@ -522,7 +523,7 @@ def task11(dataframe: pd.DataFrame, df_unisex_names=pd.DataFrame, number_names_t
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
-    df_names, dataframe_no_pivot = task1(folder_path="names", dataframe=df_names)
+    df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
 
     print(f"Number of unique names: {task2(df_names)}")
 
