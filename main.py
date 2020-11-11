@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
 import re
+import sqlite3
 
 
 def task1(dataframe: pd.DataFrame, folder_path: str = None):
@@ -128,6 +129,7 @@ def task5(dataframe: pd.DataFrame):
     smallest_ratio_index = np.argmin(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
                                             - birth_per_year_per_sex["Female to Male birth ratio"]))
 
+    # TODO: Fix text visualization on plot
     ax[1].annotate(f"Najwieksza roznica: {birth_per_year_per_sex.index[biggest_ratio_index]}",
                    (birth_per_year_per_sex.index[biggest_ratio_index],
                     birth_per_year_per_sex.iloc[biggest_ratio_index, 3]),
@@ -218,11 +220,13 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     ax.legend(loc='upper left')
 
     # Annotate requested years with corresponding values
+    xytext_positions = [-7, -5, -2]
     for year in annotate_years:
-        for name in names:
+        for name, xytext_position in zip(names, xytext_positions):
             try:
                 ax.annotate(f"{name}: {top_names_dataframe_per_year.loc[year, name]}",
-                            (year, top_names_dataframe_per_year.loc[year, name]),
+                            xy=(year, top_names_dataframe_per_year.loc[year, name]),
+                            xytext=(year + xytext_position, top_names_dataframe_per_year.loc[year, name] + 5000),
                             arrowprops=dict(facecolor='black', arrowstyle="-"))
             except KeyError as k:
                 print(f"No data about this year: {k}! SKIPPING")
@@ -233,7 +237,8 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
 
 def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: pd.Series):
     """
-    Plot sum of popularity of top 1000 names through years.
+    Plot sum of popularity of top 1000 names through years. Note the year with biggest difference between male and
+     female diversity
 
     :param dataframe: dataframe with all necessary data
     :param top_female_names: series with most popular female names
@@ -259,6 +264,12 @@ def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     # Calculate popularity
     df_year_changes["Top 1000 F names %"] = (top_female_names_per_year_sum / df_year_changes["F"]) * 100
     df_year_changes["Top 1000 M names %"] = (top_male_names_per_year_sum / df_year_changes["M"]) * 100
+    df_year_changes["Difference"] = np.abs(df_year_changes["Top 1000 F names %"] -
+                                           df_year_changes["Top 1000 M names %"])
+    # Get a year with biggest difference between male and female diversity
+    year_biggest_difference_in_diversity = df_year_changes.idxmax()["Difference"]
+    print(f"Rok z najwieksza roznica w roznorodnosci miedzy imionami meskimi a zenskimi:"
+          f" {year_biggest_difference_in_diversity}")
 
     fig, ax = plt.subplots(1, 1)
     df_year_changes.plot(y=["Top 1000 F names %", "Top 1000 M names %"], ax=ax)
@@ -267,7 +278,13 @@ def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     ax.set_ylabel("Zsumowana popularnosc 1000 najpopularniejszych imion [%]")
     ax.set_xlabel("Rok")
     ax.legend(["Imiona kobiece", "Imiona meskie"])
+    ax.annotate(f"Rok z najwieksza roznica \nw roznorodnosci miedzy imionami \nmeskimi a zenskimi:"
+                f" {year_biggest_difference_in_diversity}", xy=(year_biggest_difference_in_diversity, ax.get_ylim()[0]),
+                xytext=(year_biggest_difference_in_diversity - 30, ax.get_ylim()[0] + 5),
+                arrowprops=dict(facecolor='black', arrowstyle="-"))
     ax.grid(axis="both")
+
+    return year_biggest_difference_in_diversity
 
 
 def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False, number_of_char_trends_to_plot=3):
@@ -399,7 +416,7 @@ def task10(dataframe: pd.DataFrame):
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
 
-    df_unisex_names = (dataframe.loc[(unisex_names,), ])  # TODO: This is so time consuming
+    df_unisex_names = (dataframe.loc[(unisex_names,),])  # TODO: This is so time consuming
     unisex_names_sum = df_unisex_names.groupby('name').sum()
     most_popular_female_unisex_name = unisex_names_sum.idxmax()["F"]
     most_popular_male_unisex_name = unisex_names_sum.idxmax()["M"]
@@ -407,7 +424,7 @@ def task10(dataframe: pd.DataFrame):
     return unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name,
 
 
-def task11(dataframe: pd.DataFrame,  df_unisex_names=pd.DataFrame, number_names_to_found=3,
+def task11(dataframe: pd.DataFrame, df_unisex_names=pd.DataFrame, number_names_to_found=3,
            years_lower_range=(1880, 1920), years_upper_range=(2000, 2020)):
     """
     Find most popular names that were female/male names and then became male/female names
@@ -487,9 +504,9 @@ def task11(dataframe: pd.DataFrame,  df_unisex_names=pd.DataFrame, number_names_
     legends_female = []
     legends_male = []
     for name, female_style, male_style in zip(forgotten_female_names, female_plot_styles, male_plot_styles):
-        dataframe.loc[(name, ), "F"].plot(ax=ax, style=female_style)
+        dataframe.loc[(name,), "F"].plot(ax=ax, style=female_style)
         legends_female.append(f"{name} Female")
-        dataframe.loc[(name, ), "M"].plot(ax=ax2, style=male_style)
+        dataframe.loc[(name,), "M"].plot(ax=ax2, style=male_style)
         legends_male.append(f"{name} Male")
 
     ax.set_title('Przebieg trendu 2 imion, które przez pewien czas były'
@@ -504,10 +521,39 @@ def task11(dataframe: pd.DataFrame,  df_unisex_names=pd.DataFrame, number_names_
     return forgotten_female_names
 
 
+def task12(database_path: str):
+    """
+    Read mortality data from years 1959-2018 in individual age groups. Try to aggregate data on SQL level
+    :param database_path:
+    :return df_mortality: pandas multi index database with mortality data from years 1959-2018 in individual age groups.
+    The sex data was aggregated
+    """
+    COLUMNS_NAME = "Year, Age, mx, qx, ax, lx, dx, LLx, Tx, ex"
+
+    try:
+        conn = sqlite3.connect(database_path)
+        # Read mortality data for females
+        df_mortality_F = pd.read_sql(f'SELECT {COLUMNS_NAME} FROM USA_fltper_1x1', conn,
+                                     index_col=["Year", "Age"])
+        # Read mortality data for males
+        df_mortality_M = pd.read_sql(f'SELECT {COLUMNS_NAME} FROM USA_mltper_1x1', conn,
+                                     index_col=["Year", "Age"])
+        # Calculate values for whole population by calculatin mean
+        df_mortality = (df_mortality_F + df_mortality_M) / 2
+
+        conn.close()
+
+        return df_mortality
+
+    except FileNotFoundError:
+        print(f"Path {database_path} doesn't exist!")
+        return None
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
-    df_names, dataframe_no_pivot = task1(folder_path="names", dataframe=df_names)
+    df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
 
     print(f"Number of unique names: {task2(df_names)}")
 
@@ -526,9 +572,8 @@ def main():
     task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
           annotate_years=[1940, 1980, 2019])
 
-    task8(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names)
-
-    task9(dataframe_unpivoted=dataframe_no_pivot, distinct_years=[1910, 1960, 2015])
+    year_biggest_difference_in_diversity = task8(dataframe=df_names, top_female_names=top_female_names,
+                                                 top_male_names=top_male_names)
 
     unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
     print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
@@ -536,7 +581,9 @@ def main():
 
     forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names, number_names_to_found=2)
 
-    plt.show()
+    df_mortality = task12("data/USA_ltper_1x1.sqlite")
+
+    # plt.show()
 
 
 if __name__ == "__main__":
