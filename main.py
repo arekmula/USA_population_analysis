@@ -217,12 +217,14 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     ax.set_xlabel("Rok")
     ax.legend(loc='upper left')
 
-    # Annotate requested years with corresponding values
+    # Annotate requested years with corresponding values TODO: Fix arrows
+    xytext_positions = [-7, -5, -2]
     for year in annotate_years:
-        for name in names:
+        for name, xytext_position in zip(names, xytext_positions):
             try:
                 ax.annotate(f"{name}: {top_names_dataframe_per_year.loc[year, name]}",
-                            (year, top_names_dataframe_per_year.loc[year, name]),
+                            xy=(year, top_names_dataframe_per_year.loc[year, name]),
+                            xytext=(year + xytext_position, top_names_dataframe_per_year.loc[year, name] + 5000),
                             arrowprops=dict(facecolor='black', arrowstyle="-"))
             except KeyError as k:
                 print(f"No data about this year: {k}! SKIPPING")
