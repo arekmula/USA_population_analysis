@@ -550,41 +550,81 @@ def task12(database_path: str):
         return None
 
 
+def task13(df_mortality: pd.DataFrame()):
+    """
+    Plot population growth
+    :param df_mortality:
+    :return:
+    """
+    # df_year_growth = df_mortality.groupby('Year').sum()
+    # df_year_growth["growth"] = (100000-df_year_growth["dx"])/1000
+    # print(df_year_growth)
+
+
+def task14(df_mortality: pd.DataFrame):
+    """
+    Calculate survival of kids in first year of age
+    :param df_mortality:
+    :return:
+    """
+    print(df_mortality)
+    df_mortality = df_mortality.swaplevel(0, 1)
+    df_mortality = df_mortality.sort_index()
+    # Choose only age = 0 and columns lx and dx
+    df_mortality_zero_age = df_mortality.loc[(0,), ["lx", "dx"]]
+    df_mortality_zero_age["Survival"] = ((df_mortality_zero_age["lx"] - df_mortality_zero_age["dx"])
+                                         / df_mortality_zero_age["lx"]) * 100
+    fig, ax = plt.subplots(1, 1)
+    df_mortality_zero_age.plot(y=["Survival"], ax=ax)
+
+    fig.suptitle("Przeżywalność dzieci w pierwszym roku życia")
+    ax.set_xlabel("Rok")
+    ax.set_ylabel("Współczynnik przeżywalności [%]")
+    ax.legend(["Dzieci w pierwszym roku życia"], loc='upper left')
+    ax.set_ylim(top=100)
+    ax.set_xlim(right=2017, left=1959)
+    ax.grid(axis="both")
+
+    print(df_mortality_zero_age)
+
+
 def main():
-    df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
-    # Dataframe with all names and years
-    df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
-
-    print(f"Number of unique names: {task2(df_names)}")
-
-    number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
-    print(f"Number of unique men names: {number_of_unique_men_names}")
-    print(f"Number of unique female names: {number_of_unique_female_names}")
-
-    df_names_freq = task4(df_names)
-
-    year_biggest_ratio, year_smallest_ratio = task5(df_names)
-    print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
-          f" smallest difference: {year_smallest_ratio}")
-
-    top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
-
-    task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
-          annotate_years=[1940, 1980, 2019])
-
-    year_biggest_difference_in_diversity = task8(dataframe=df_names, top_female_names=top_female_names,
-                                                 top_male_names=top_male_names)
-
-    unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
-    print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
-          f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
-
-    forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names, number_names_to_found=2)
+    # df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
+    # # Dataframe with all names and years
+    # df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
+    #
+    # print(f"Number of unique names: {task2(df_names)}")
+    #
+    # number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
+    # print(f"Number of unique men names: {number_of_unique_men_names}")
+    # print(f"Number of unique female names: {number_of_unique_female_names}")
+    #
+    # df_names_freq = task4(df_names)
+    #
+    # year_biggest_ratio, year_smallest_ratio = task5(df_names)
+    # print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
+    #       f" smallest difference: {year_smallest_ratio}")
+    #
+    # top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
+    #
+    # task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
+    #       annotate_years=[1940, 1980, 2019])
+    #
+    # year_biggest_difference_in_diversity = task8(dataframe=df_names, top_female_names=top_female_names,
+    #                                              top_male_names=top_male_names)
+    #
+    # unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
+    # print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
+    #       f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
+    #
+    # forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names, number_names_to_found=2)
 
     df_mortality = task12("data/USA_ltper_1x1.sqlite")
+    # task13(df_mortality)
+    task14(df_mortality)
 
-    # plt.show()
+    plt.show()
 
-
+    # TODO: Fix y lim and x lim in all plots
 if __name__ == "__main__":
     main()
