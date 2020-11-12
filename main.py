@@ -564,10 +564,9 @@ def task13(df_mortality: pd.DataFrame()):
 def task14(df_mortality: pd.DataFrame):
     """
     Calculate survival of kids in first year of age
-    :param df_mortality:
+    :param df_mortality: dataframe with mortality data
     :return:
     """
-    print(df_mortality)
     df_mortality = df_mortality.swaplevel(0, 1)
     df_mortality = df_mortality.sort_index()
     # Choose only age = 0 and columns lx and dx
@@ -577,15 +576,51 @@ def task14(df_mortality: pd.DataFrame):
     fig, ax = plt.subplots(1, 1)
     df_mortality_zero_age.plot(y=["Survival"], ax=ax)
 
-    fig.suptitle("Przeżywalność dzieci w pierwszym roku życia")
-    ax.set_xlabel("Rok")
+    fig.suptitle("ZAD14 - Przeżywalność dzieci w pierwszym roku życia")
+    ax.set_xlabel("Rok urodzenia")
     ax.set_ylabel("Współczynnik przeżywalności [%]")
     ax.legend(["Dzieci w pierwszym roku życia"], loc='upper left')
     ax.set_ylim(top=100)
     ax.set_xlim(right=2017, left=1959)
     ax.grid(axis="both")
 
-    print(df_mortality_zero_age)
+    return fig, ax
+
+
+def task15(df_mortality: pd.DataFrame, figure_kids_survival, axis_kids_survival):
+    """
+    Calculate survival of kids in first 5 years of age
+    :param df_mortality: data frame with mortality data
+    :param figure_kids_survival: figure with survival of kids in first year of age
+    :param axis_kids_survival: axis with survival of kids in first year of age
+    :return:
+    """
+    df_mortality = df_mortality.swaplevel(0, 1)
+    df_mortality = df_mortality.sort_index()
+    # Get only data from 0-5 age
+    df_mortality_age_0_4 = df_mortality.loc[([0, 1, 2, 3, 4], ), ["lx", "dx"]]
+    df_mortality_age_0_4 = df_mortality_age_0_4.swaplevel(0, 1)
+    df_mortality_age_0_4 = df_mortality_age_0_4.sort_index(0, 1)
+    # Compute survival ratio for each age in each year
+    df_mortality_age_0_4["Survival"] = ((df_mortality_age_0_4["lx"] - df_mortality_age_0_4["dx"])
+                                         / df_mortality_age_0_4["lx"]) * 100
+
+    years_list = df_mortality_age_0_4.index.get_level_values(0).unique()
+    df_surival_age_0_4 = pd.DataFrame(index=years_list[:-4])
+    df_surival_age_0_4["Survival"] = 0
+    age_slice = np.arange(0, 5)
+    for year in range(years_list[0], years_list[-1]-3):
+        years_slice = np.arange(year, year+5)
+        for cur_year, age in zip(years_slice, age_slice):
+            df_surival_age_0_4.loc[year, "Survival"] += df_mortality_age_0_4.loc[(cur_year, age), "Survival"]
+        df_surival_age_0_4.loc[year, "Survival"] = df_surival_age_0_4.loc[year, "Survival"]/5
+
+    df_surival_age_0_4.plot(y="Survival", ax=axis_kids_survival)
+    figure_kids_survival.suptitle("ZAD15 i 14- Przeżywalność dzieci urodzonych w danym roku")
+    axis_kids_survival.set_xlabel("Rok urodzenia")
+    axis_kids_survival.set_ylabel("Współczynnik przeżywalności [%]")
+    axis_kids_survival.legend(["Dzieci w pierwszym roku życia", "Dzieci w wieku do 5 lat"], loc='lower right')
+    axis_kids_survival.grid(axis="both")
 
 
 def main():
@@ -621,7 +656,8 @@ def main():
 
     df_mortality = task12("data/USA_ltper_1x1.sqlite")
     # task13(df_mortality)
-    task14(df_mortality)
+    fig_task14, ax_task14 = task14(df_mortality)
+    task15(df_mortality, fig_task14, ax_task14)
 
     plt.show()
 
