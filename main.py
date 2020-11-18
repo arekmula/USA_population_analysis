@@ -590,26 +590,35 @@ def task13(df_mortality_female: pd.DataFrame, df_mortality_male, df_names: pd.Da
     ax.ticklabel_format(style="plain", axis='y')
 
 
-def task14(df_mortality: pd.DataFrame):
+def task14(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame):
     """
     Calculate survival of kids in first year of age
-    :param df_mortality: dataframe with mortality data
+    :param df_mortality_male:
+    :param df_mortality_female: dataframe with mortality data
     :return:
     """
     print("Starting TASK 14")
-    df_mortality = df_mortality.swaplevel(0, 1)
-    df_mortality = df_mortality.sort_index()
-    # Choose only age = 0 and columns lx and dx
-    df_mortality_zero_age = df_mortality.loc[(0,), ["lx", "dx"]]
-    df_mortality_zero_age["Survival"] = ((df_mortality_zero_age["lx"] - df_mortality_zero_age["dx"])
-                                         / df_mortality_zero_age["lx"]) * 100
-    fig, ax = plt.subplots(1, 1)
-    df_mortality_zero_age.plot(y=["Survival"], ax=ax)
+    df_mortality_zero_age = pd.DataFrame()
 
+    df_mortality_female = df_mortality_female.swaplevel(0, 1)
+    df_mortality_female = df_mortality_female.sort_index()
+    df_mortality_male = df_mortality_male.swaplevel(0, 1)
+    df_mortality_male = df_mortality_male.sort_index()
+    # Choose only age = 0 and columns lx and dx
+    df_mortality_zero_age[["F lx", "F dx"]] = df_mortality_female.loc[(0,), ["lx", "dx"]]
+    df_mortality_zero_age[["M lx", "M dx"]] = df_mortality_male.loc[(0,), ["lx", "dx"]]
+
+    df_mortality_zero_age["F Survival"] = ((df_mortality_zero_age["F lx"] - df_mortality_zero_age["F dx"])
+                                           / df_mortality_zero_age["F lx"]) * 100
+    df_mortality_zero_age["M Survival"] = ((df_mortality_zero_age["M lx"] - df_mortality_zero_age["M dx"])
+                                           / df_mortality_zero_age["M lx"]) * 100
+
+    fig, ax = plt.subplots(1, 1)
+    df_mortality_zero_age.plot(y=["F Survival", "M Survival"], ax=ax)
     fig.suptitle("ZAD14 - Przeżywalność dzieci w pierwszym roku życia")
     ax.set_xlabel("Rok urodzenia")
     ax.set_ylabel("Współczynnik przeżywalności [%]")
-    ax.legend(["Dzieci w pierwszym roku życia"], loc='upper left')
+    ax.legend(["Dziewczynki", "Chlopcy"], loc='upper left')
     ax.set_ylim(top=100)
     ax.set_xlim(right=2017, left=1959)
     ax.grid(axis="both")
@@ -657,7 +666,7 @@ def task15(df_mortality: pd.DataFrame, figure_kids_survival, axis_kids_survival)
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # # Dataframe with all names and years
-    df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
+    # df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
     # #
     # print(f"Number of unique names: {task2(df_names)}")
     #
@@ -687,9 +696,9 @@ def main():
 
     df_mortality_F, df_mortality_M = task12("data/USA_ltper_1x1.sqlite")
 
-    task13(df_mortality_F, df_mortality_M, df_names=df_names)
+    # task13(df_mortality_F, df_mortality_M, df_names=df_names)
     #
-    # fig_task14, ax_task14 = task14(df_mortality)
+    fig_task14, ax_task14 = task14(df_mortality_F, df_mortality_M)
     #
     # task15(df_mortality, fig_task14, ax_task14)
     #
