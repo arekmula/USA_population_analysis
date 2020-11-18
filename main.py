@@ -540,51 +540,52 @@ def task12(database_path: str):
         df_mortality_M = pd.read_sql(f'SELECT {COLUMNS_NAME} FROM USA_mltper_1x1', conn,
                                      index_col=["Year", "Age"])
         # Calculate values for whole population by calculating sum
-        df_mortality = df_mortality_F + df_mortality_M
+        # df_mortality = df_mortality_F + df_mortality_M
 
         conn.close()
 
-        return df_mortality
+        return df_mortality_F, df_mortality_M
 
     except FileNotFoundError:
         print(f"Path {database_path} doesn't exist!")
         return None
 
 
-def task13(df_mortality: pd.DataFrame, df_names: pd.DataFrame):
+def task13(df_mortality_female: pd.DataFrame, df_mortality_male, df_names: pd.DataFrame):
     """
     Plot population growth
+    :param df_mortality_male: dataframe contaning male deaths per year and age
     :param df_names: dataframe containing number of given names to births
-    :param df_mortality: dataframe contaning deaths per year and age
+    :param df_mortality_female: dataframe contaning female deaths per year and age
     :return:
     """
     print("Starting TASK 13")
+    df_natural_increase = pd.DataFrame()
 
     df_names_year = df_names.groupby('year').sum()
     # # Get only years from 1959 to 2017
     df_names_year = df_names_year.loc[1959:2017, ["F", "M"]]
-    df_names_year["total"] = df_names_year["F"] + df_names_year["M"]
-
-    number_of_deaths_per_year = (df_mortality["dx"].groupby("Year").sum()).astype(int)
+    # Save births in df_natural_increase dataframe
+    df_natural_increase["F births"] = df_names_year["F"]
+    df_natural_increase["M births"] = df_names_year["M"]
+    # Save deaths in df_natural_increase dataframe
+    df_natural_increase["F deaths"] = (df_mortality_female["dx"].groupby("Year").sum()).astype(int)
+    df_natural_increase["M deaths"] = (df_mortality_male["dx"].groupby("Year").sum()).astype(int)
+    # Calculate natural increase
+    df_natural_increase["F increase"] = df_natural_increase["F births"] - df_natural_increase["F deaths"]
+    df_natural_increase["M increase"] = df_natural_increase["M births"] - df_natural_increase["M deaths"]
 
     # Calculate population
     # population = df_mortality["lx"].groupby("Year").sum()
-
-    # Choose only age = 0 and lx column so we have number of births
-    df_natural_increase = pd.DataFrame()
-    df_natural_increase["births"] = df_names_year["total"]
-    df_natural_increase["deaths"] = number_of_deaths_per_year
     # df_natural_increase["population"] = population
-    df_natural_increase["natural increase"] = (df_natural_increase["births"] -
-                                               df_natural_increase["deaths"]).astype(int)
 
     fig, ax = plt.subplots(1, 1)
-    df_natural_increase.plot(y=["natural increase"], ax=ax)
+    df_natural_increase.plot(y=["F increase", "M increase"], ax=ax)
     fig.suptitle("ZAD13 - Przyrost naturalny")
     ax.set_xlabel("Rok urodzenia")
     ax.set_ylabel("Przyrost naturalny")
     ax.set_xlim(right=2017, left=1959)
-    ax.get_legend().remove()
+    ax.legend(["Kobiety", "Mezczyzni"])
     ax.grid(axis="both")
     ax.ticklabel_format(style="plain", axis='y')
 
@@ -655,43 +656,43 @@ def task15(df_mortality: pd.DataFrame, figure_kids_survival, axis_kids_survival)
 
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
-    # Dataframe with all names and years
+    # # Dataframe with all names and years
     df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
+    # #
+    # print(f"Number of unique names: {task2(df_names)}")
     #
-    print(f"Number of unique names: {task2(df_names)}")
+    # number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
+    # print(f"Number of unique men names: {number_of_unique_men_names}")
+    # print(f"Number of unique female names: {number_of_unique_female_names}")
+    #
+    # df_names_freq = task4(df_names)
+    #
+    # year_biggest_ratio, year_smallest_ratio = task5(df_names)
+    # print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
+    #       f" smallest difference: {year_smallest_ratio}")
+    #
+    # top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
+    #
+    # task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
+    #       annotate_years=[1940, 1980, 2019])
+    #
+    # year_biggest_difference_in_diversity = task8(dataframe=df_names, top_female_names=top_female_names,
+    #                                              top_male_names=top_male_names)
+    #
+    # unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
+    # print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
+    #       f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
+    #
+    # forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names, number_names_to_found=2)
 
-    number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
-    print(f"Number of unique men names: {number_of_unique_men_names}")
-    print(f"Number of unique female names: {number_of_unique_female_names}")
+    df_mortality_F, df_mortality_M = task12("data/USA_ltper_1x1.sqlite")
 
-    df_names_freq = task4(df_names)
-
-    year_biggest_ratio, year_smallest_ratio = task5(df_names)
-    print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
-          f" smallest difference: {year_smallest_ratio}")
-
-    top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
-
-    task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
-          annotate_years=[1940, 1980, 2019])
-
-    year_biggest_difference_in_diversity = task8(dataframe=df_names, top_female_names=top_female_names,
-                                                 top_male_names=top_male_names)
-
-    unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
-    print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
-          f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
-
-    forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names, number_names_to_found=2)
-
-    df_mortality = task12("data/USA_ltper_1x1.sqlite")
-
-    task13(df_mortality, df_names=df_names)
-
-    fig_task14, ax_task14 = task14(df_mortality)
-
-    task15(df_mortality, fig_task14, ax_task14)
-
+    task13(df_mortality_F, df_mortality_M, df_names=df_names)
+    #
+    # fig_task14, ax_task14 = task14(df_mortality)
+    #
+    # task15(df_mortality, fig_task14, ax_task14)
+    #
     plt.show()
 
     # TODO: Fix y lim and x lim in all plots
