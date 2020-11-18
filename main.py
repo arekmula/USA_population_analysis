@@ -132,7 +132,6 @@ def task5(dataframe: pd.DataFrame):
     smallest_ratio_index = np.argmin(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
                                             - birth_per_year_per_sex["Female to Male birth ratio"]))
 
-    # TODO: Fix text visualization on plot
     ax[1].annotate(f"Najwieksza roznica: {birth_per_year_per_sex.index[biggest_ratio_index]}",
                    xy=(birth_per_year_per_sex.index[biggest_ratio_index], ax[1].get_ylim()[0]),
                    xytext=(birth_per_year_per_sex.index[biggest_ratio_index], ax[1].get_ylim()[0] + 0.5),
@@ -745,8 +744,6 @@ def main():
     task15(df_mortality_F, df_mortality_M, fig_task14, ax_task14)
     #
     plt.show()
-
-    # TODO: Fix y lim and x lim in all plots
 
 
 if __name__ == "__main__":
