@@ -14,7 +14,7 @@ def task1(dataframe: pd.DataFrame, folder_path: str = None):
     :param dataframe: Input dataframe with columns: year, name, sex, count
     :return: Output pivot_table dataframe, list of years
     """
-    print("Starting TASK 1")
+    print("\nStarting TASK 1")
     if folder_path is None or folder_path == "":
         files_list = [f for f in glob.glob("*.txt") if "yob" in f]
     else:
@@ -46,7 +46,7 @@ def task2(dataframe: pd.DataFrame):
     :param: dataframe: Pandas dataframe with all the necessary data
     :return: Number of unique names
     """
-    print("Starting TASK 2")
+    print("\nStarting TASK 2")
     unique_names = dataframe.groupby('name').nunique()
     return len(unique_names)
 
@@ -60,7 +60,7 @@ def task3(dataframe: pd.DataFrame):
     number_of_unique_men_names
     number_of_unique_female_names
     """
-    print("Starting TASK 3")
+    print("\nStarting TASK 3")
     unique_names = dataframe.groupby('name').nunique()
     number_of_unique_men_names = unique_names[unique_names["M"] >= 1].count()["M"]
     number_of_unique_female_names = unique_names[unique_names["F"] >= 1].count()["F"]
@@ -75,7 +75,7 @@ def task4(dataframe: pd.DataFrame):
     :param dataframe: dataframe with all necessary data
     :return: dataframe with frequency per sex added
     """
-    print("Starting TASK 4")
+    print("\nStarting TASK 4")
     # Calculate sum of births per year and sex
     birth_per_year_per_sex = dataframe.groupby('year').sum()
     dataframe["frequency_female"] = 0
@@ -96,13 +96,14 @@ def task5(dataframe: pd.DataFrame):
     :return: year_biggest_ratio: year of the biggest difference between birth of male and female
     :return: year_smallest_ratio: year of the smallest difference between birth of male and female
     """
-    print("Starting TASK 5")
+    print("\nStarting TASK 5")
     # Calculate sum of births per year and sex
     birth_per_year_per_sex = dataframe[["F", "M"]].groupby('year').sum()
     birth_per_year_per_sex["total"] = birth_per_year_per_sex["F"] + birth_per_year_per_sex["M"]
     birth_per_year_per_sex["Female to Male birth ratio"] = birth_per_year_per_sex["F"] / birth_per_year_per_sex["M"]
 
     fig, ax = plt.subplots(2, 1)
+    fig.suptitle("Zadanie 5")
 
     birth_per_year_per_sex.plot(y=["total"], ax=ax[0])
     ax[0].ticklabel_format(style="plain", axis='y')  # Disable scientific notation
@@ -111,7 +112,8 @@ def task5(dataframe: pd.DataFrame):
     ax[0].set_title('Liczba narodzin na przestrzeni lat w USA')
     ax[0].get_legend().remove()
     ax[0].minorticks_on()
-    ax[0].grid(axis="x")
+    ax[0].grid(axis="both")
+    ax[0].set_xlim(left=np.min(birth_per_year_per_sex.index.values), right=np.max(birth_per_year_per_sex.index.values))
 
     birth_per_year_per_sex["Reference"] = 1  # Create column with value 1, to better visualization of ratio on plot
     birth_per_year_per_sex.plot(y=["Female to Male birth ratio"], ax=ax[1])
@@ -122,6 +124,7 @@ def task5(dataframe: pd.DataFrame):
     ax[1].legend(["Female to Male birth ratio", "Reference"])
     ax[1].minorticks_on()
     ax[1].grid(axis="x")
+    ax[1].set_xlim(left=np.min(birth_per_year_per_sex.index.values), right=np.max(birth_per_year_per_sex.index.values))
 
     # Calculate in which year the ratio was biggest:
     biggest_ratio_index = np.argmax(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
@@ -129,14 +132,13 @@ def task5(dataframe: pd.DataFrame):
     smallest_ratio_index = np.argmin(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
                                             - birth_per_year_per_sex["Female to Male birth ratio"]))
 
-    # TODO: Fix text visualization on plot
     ax[1].annotate(f"Najwieksza roznica: {birth_per_year_per_sex.index[biggest_ratio_index]}",
-                   (birth_per_year_per_sex.index[biggest_ratio_index],
-                    birth_per_year_per_sex.iloc[biggest_ratio_index, 3]),
+                   xy=(birth_per_year_per_sex.index[biggest_ratio_index], ax[1].get_ylim()[0]),
+                   xytext=(birth_per_year_per_sex.index[biggest_ratio_index], ax[1].get_ylim()[0] + 0.5),
                    arrowprops=dict(facecolor='black', arrowstyle="-"))
     ax[1].annotate(f"Najmniejsza roznica: {birth_per_year_per_sex.index[smallest_ratio_index]}",
-                   (birth_per_year_per_sex.index[smallest_ratio_index],
-                    birth_per_year_per_sex.iloc[smallest_ratio_index, 3]),
+                   xy=(birth_per_year_per_sex.index[smallest_ratio_index], ax[1].get_ylim()[0]),
+                   xytext=(birth_per_year_per_sex.index[smallest_ratio_index], ax[1].get_ylim()[0] + 0.8),
                    arrowprops=dict(facecolor='black', arrowstyle="-"))
 
     return birth_per_year_per_sex.index[biggest_ratio_index], birth_per_year_per_sex.index[smallest_ratio_index]
@@ -152,7 +154,7 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
     :return: top_female_names_across_all_years,
     :return: top_male_names_across_all_years,
     """
-    print("Starting TASK 6")
+    print("\nStarting TASK 6")
     # First sort by column values and then sort by index value
     female_names_sorted = (dataframe.sort_values('F', ascending=False)).sort_index(level=[0], ascending=[True])["F"]
     male_names_sorted = (dataframe.sort_values('M', ascending=False)).sort_index(level=[0], ascending=[True])["M"]
@@ -167,6 +169,8 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
     top_male_names_across_all_years = (male_names_sorted.groupby('name').sum()).sort_values(ascending=False)
     top_male_names_across_all_years = top_male_names_across_all_years.head(number_of_top_popular_names)
 
+    print(f"Most popular female name: {top_female_names_across_all_years.index[0]}. Most popular male name:"
+          f" {top_male_names_across_all_years.index[0]}")
     return top_female_names_across_all_years, top_male_names_across_all_years
 
 
@@ -184,7 +188,7 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     :param top_male_names: sorted series of top male names from which there will be top1 chosen
     :return:
     """
-    print("Starting TASK 7")
+    print("\nStarting TASK 7")
     top_female_name = top_female_names.index[0]
     top_male_name = top_male_names.index[0]
 
@@ -218,7 +222,10 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     ax.set_ylabel("Liczba nadanych imion")
     ax.set_xlabel("Rok")
     ax.legend(loc='upper left')
-
+    ax.set_xlim(left=np.min(top_names_dataframe_per_year.index.values),
+                right=np.max(top_names_dataframe_per_year.index.values))
+    ax.grid(axis="both")
+    ax.minorticks_on()
     # Annotate requested years with corresponding values
     xytext_positions = [-7, -5, -2]
     for year in annotate_years:
@@ -233,6 +240,8 @@ def task7(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
 
     ax2.set_ylabel("Popularnosc imienia [%]")
     ax2.legend(loc='upper right')
+    ax2.set_xlim(left=np.min(top_names_dataframe_per_year.index.values),
+                 right=np.max(top_names_dataframe_per_year.index.values))
 
 
 def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: pd.Series):
@@ -245,7 +254,7 @@ def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     :param top_male_names: series with most popular male names
     :return:
     """
-    print("Starting TASK 8")
+    print("\nStarting TASK 8")
     dataframe = dataframe.fillna(0)
     # Sum female and male names per year
     df_year_changes = dataframe.groupby('year').sum()
@@ -274,7 +283,7 @@ def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
     fig, ax = plt.subplots(1, 1)
     df_year_changes.plot(y=["Top 1000 F names %", "Top 1000 M names %"], ax=ax)
 
-    fig.suptitle("Udzial 1000 najpopularniejszych imion na przestrzeni lat")
+    fig.suptitle("Zad8 - Udzial 1000 najpopularniejszych imion na przestrzeni lat")
     ax.set_ylabel("Zsumowana popularnosc 1000 najpopularniejszych imion [%]")
     ax.set_xlabel("Rok")
     ax.legend(["Imiona kobiece", "Imiona meskie"])
@@ -283,6 +292,8 @@ def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
                 xytext=(year_biggest_difference_in_diversity - 30, ax.get_ylim()[0] + 5),
                 arrowprops=dict(facecolor='black', arrowstyle="-"))
     ax.grid(axis="both")
+    ax.set_xlim(left=np.min(df_year_changes.index.values), right=np.max(df_year_changes.index.values))
+    ax.minorticks_on()
 
     return year_biggest_difference_in_diversity
 
@@ -304,7 +315,7 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
     :param dataframe_unpivoted: Dataframe containing all data
     :return:
     """
-    print("Starting TASK 9")
+    print("\nStarting TASK 9")
     if len(distinct_years) < 2:
         print("You have to give at least 2 years to distinguish!")
         return None
@@ -385,6 +396,8 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
     ax[0].set_title("Wsród kobiet")
     ax[0].set_xlabel("Rok")
     ax[0].set_ylabel("Popularność litery")
+    ax[0].grid(axis="both")
+    ax[0].minorticks_on()
 
     for male_char in male_chars_biggest_difference:
         df_last_characters.loc[(male_char,), "M normalized"].plot(ax=ax[1])
@@ -393,6 +406,8 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
     ax[1].set_title("Wsród mężczyzn")
     ax[1].set_xlabel("Rok")
     ax[1].set_ylabel("Popularność litery")
+    ax[1].grid(axis="both")
+    ax[1].minorticks_on()
 
 
 def task10(dataframe: pd.DataFrame):
@@ -404,7 +419,7 @@ def task10(dataframe: pd.DataFrame):
     :return most_popular_female_unisex_name: most popular female name that is also a male name
     :return most_popular_male_unisex_name: most popular male name that is also a female name
     """
-    print("Starting TASK 10")
+    print("\nStarting TASK 10")
     # Count in how many years each name existed in each sex. If a name has 0 count in one of the sex column, that means
     # that it never existed as name in this sex and it's not unisex name
     # I could use sum() at the very beginning, but .count() is much faster. So I decided to use count() to get the
@@ -416,6 +431,7 @@ def task10(dataframe: pd.DataFrame):
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
 
+    print("Slicing dataframe. This might take a while!")
     df_unisex_names = (dataframe.loc[(unisex_names,),])  # TODO: This is so time consuming
     unisex_names_sum = df_unisex_names.groupby('name').sum()
     most_popular_female_unisex_name = unisex_names_sum.idxmax()["F"]
@@ -436,7 +452,7 @@ def task11(dataframe: pd.DataFrame, df_unisex_names=pd.DataFrame, number_names_t
     :return: names with smallest standard deviation between sex and year range, but at the same time with quite big
     number of names given
     """
-    print("Starting TASK 11")
+    print("\nStarting TASK 11")
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
 
@@ -509,14 +525,17 @@ def task11(dataframe: pd.DataFrame, df_unisex_names=pd.DataFrame, number_names_t
         dataframe.loc[(name,), "M"].plot(ax=ax2, style=male_style)
         legends_male.append(f"{name} Male")
 
-    ax.set_title('Przebieg trendu 2 imion, które przez pewien czas były'
+    ax.set_title('Zad 11 - Przebieg trendu 2 imion, które przez pewien czas były'
                  ' żeńsko/męskie a nastepnie stały się męsko/żeńskie')
     ax.legend(legends_female, loc='upper left')
-    ax.grid(axis='x')
+    ax.grid(axis='both')
+    ax.minorticks_on()
     ax.set_ylabel("Liczba nadanych imion żeńskich")
     ax2.set_ylabel("Liczba nadanych imion męskich")
     ax2.legend(legends_male, loc='upper right')
     ax.set_xlabel("Rok")
+    ax.set_xlim(left=np.min(dataframe.index.get_level_values(1).values),
+                right=np.max(dataframe.index.get_level_values(1).values))
 
     return forgotten_female_names
 
@@ -526,9 +545,10 @@ def task12(database_path: str):
     Read mortality data from years 1959-2018 in individual age groups. Try to aggregate data on SQL level
     :param database_path:
     :return df_mortality: pandas multi index database with mortality data from years 1959-2018 in individual age groups.
-    The sex data was aggregated
+
     """
-    COLUMNS_NAME = "Year, Age, mx, qx, ax, lx, dx, LLx, Tx, ex"
+    print("\nStarting TASK 12")
+    COLUMNS_NAME = "Year, Age, lx, dx"
 
     try:
         conn = sqlite3.connect(database_path)
@@ -538,23 +558,157 @@ def task12(database_path: str):
         # Read mortality data for males
         df_mortality_M = pd.read_sql(f'SELECT {COLUMNS_NAME} FROM USA_mltper_1x1', conn,
                                      index_col=["Year", "Age"])
-        # Calculate values for whole population by calculatin mean
-        df_mortality = (df_mortality_F + df_mortality_M) / 2
+        # Calculate values for whole population by calculating sum
+        # df_mortality = df_mortality_F + df_mortality_M
 
         conn.close()
 
-        return df_mortality
+        return df_mortality_F, df_mortality_M
 
     except FileNotFoundError:
         print(f"Path {database_path} doesn't exist!")
         return None
 
 
+def task13(df_mortality_female: pd.DataFrame, df_mortality_male, df_names: pd.DataFrame):
+    """
+    Plot population growth
+    :param df_mortality_male: dataframe contaning male deaths per year and age
+    :param df_names: dataframe containing number of given names to births
+    :param df_mortality_female: dataframe contaning female deaths per year and age
+    :return:
+    """
+    print("\nStarting TASK 13")
+    df_natural_increase = pd.DataFrame()
+
+    df_names_year = df_names.groupby('year').sum()
+    # # Get only years from 1959 to 2017
+    df_names_year = df_names_year.loc[1959:2017, ["F", "M"]]
+    # Save births in df_natural_increase dataframe
+    df_natural_increase["F births"] = df_names_year["F"]
+    df_natural_increase["M births"] = df_names_year["M"]
+    # Save deaths in df_natural_increase dataframe
+    df_natural_increase["F deaths"] = (df_mortality_female["dx"].groupby("Year").sum()).astype(int)
+    df_natural_increase["M deaths"] = (df_mortality_male["dx"].groupby("Year").sum()).astype(int)
+    # Calculate natural increase
+    df_natural_increase["F increase"] = df_natural_increase["F births"] - df_natural_increase["F deaths"]
+    df_natural_increase["M increase"] = df_natural_increase["M births"] - df_natural_increase["M deaths"]
+
+    # Calculate population
+    # population = df_mortality["lx"].groupby("Year").sum()
+    # df_natural_increase["population"] = population
+
+    fig, ax = plt.subplots(1, 1)
+    df_natural_increase.plot(y=["F increase", "M increase"], ax=ax)
+    fig.suptitle("ZAD13 - Przyrost naturalny")
+    ax.set_xlabel("Rok urodzenia")
+    ax.set_ylabel("Przyrost naturalny")
+    ax.set_xlim(right=2017, left=1959)
+    ax.legend(["Kobiety", "Mezczyzni"])
+    ax.grid(axis="both")
+    ax.ticklabel_format(style="plain", axis='y')
+    ax.minorticks_on()
+
+
+def task14(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame):
+    """
+    Calculate survival of kids in first year of age
+    :param df_mortality_male: dataframe with mortality data for male
+    :param df_mortality_female: dataframe with mortality data for female
+    :return: figure and axis of plot with survival ratio for kids
+    """
+    print("\nStarting TASK 14")
+    df_mortality_zero_age = pd.DataFrame()
+
+    df_mortality_female = df_mortality_female.swaplevel(0, 1)
+    df_mortality_female = df_mortality_female.sort_index()
+    df_mortality_male = df_mortality_male.swaplevel(0, 1)
+    df_mortality_male = df_mortality_male.sort_index()
+    # Choose only age = 0 and columns lx and dx
+    df_mortality_zero_age[["F lx", "F dx"]] = df_mortality_female.loc[(0,), ["lx", "dx"]]
+    df_mortality_zero_age[["M lx", "M dx"]] = df_mortality_male.loc[(0,), ["lx", "dx"]]
+
+    df_mortality_zero_age["F Survival"] = ((df_mortality_zero_age["F lx"] - df_mortality_zero_age["F dx"])
+                                           / df_mortality_zero_age["F lx"]) * 100
+    df_mortality_zero_age["M Survival"] = ((df_mortality_zero_age["M lx"] - df_mortality_zero_age["M dx"])
+                                           / df_mortality_zero_age["M lx"]) * 100
+
+    fig, ax = plt.subplots(1, 1)
+    df_mortality_zero_age.plot(y=["F Survival", "M Survival"], ax=ax, style=["-g", "-r"])
+    fig.suptitle("ZAD14 - Przeżywalność dzieci w pierwszym roku życia")
+    ax.set_xlabel("Rok urodzenia")
+    ax.set_ylabel("Współczynnik przeżywalności [%]")
+    ax.legend(["Dziewczynki", "Chlopcy"], loc='upper left')
+    ax.set_ylim(top=100)
+    ax.set_xlim(right=2017, left=1959)
+    ax.grid(axis="both")
+    ax.minorticks_on()
+
+    return fig, ax
+
+
+def task15(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame,
+           figure_kids_survival, axis_kids_survival):
+    """
+    Calculate survival of kids in first 5 years of age
+    :param df_mortality_male:
+    :param df_mortality_female: data frame with mortality data
+    :param figure_kids_survival: figure with survival of kids in first year of age
+    :param axis_kids_survival: axis with survival of kids in first year of age
+    :return:
+    """
+    print("\nStarting TASK 15")
+    df_mortality_age_0_4 = pd.DataFrame()
+
+    df_mortality_female = df_mortality_female.swaplevel(0, 1)
+    df_mortality_female = df_mortality_female.sort_index()
+    df_mortality_male = df_mortality_male.swaplevel(0, 1)
+    df_mortality_male = df_mortality_male.sort_index()
+
+    # Get only data from 0-5 age
+    df_mortality_age_0_4[["F lx", "F dx"]] = df_mortality_female.loc[([0, 1, 2, 3, 4],), ["lx", "dx"]]
+    df_mortality_age_0_4[["M lx", "M dx"]] = df_mortality_male.loc[([0, 1, 2, 3, 4],), ["lx", "dx"]]
+
+    df_mortality_age_0_4 = df_mortality_age_0_4.swaplevel(0, 1)
+    df_mortality_age_0_4 = df_mortality_age_0_4.sort_index(0, 1)
+    # Compute survival ratio for each age in each year
+    df_mortality_age_0_4["F Survival"] = ((df_mortality_age_0_4["F lx"] - df_mortality_age_0_4["F dx"])
+                                          / df_mortality_age_0_4["F lx"]) * 100
+    df_mortality_age_0_4["M Survival"] = ((df_mortality_age_0_4["M lx"] - df_mortality_age_0_4["M dx"])
+                                          / df_mortality_age_0_4["M lx"]) * 100
+
+    # Get list of years and create dataframe from it, deleting last 4 years
+    years_list = df_mortality_age_0_4.index.get_level_values(0).unique()
+    df_surival_age_0_4 = pd.DataFrame(index=years_list[:-4])
+    df_surival_age_0_4["F Survival"] = 0
+    df_surival_age_0_4["M Survival"] = 0
+
+    age_slice = np.arange(0, 5)
+    for year in range(years_list[0], years_list[-1] - 3):
+        years_slice = np.arange(year, year + 5)
+
+        for cur_year, age in zip(years_slice, age_slice):
+            df_surival_age_0_4.loc[year, "F Survival"] += df_mortality_age_0_4.loc[(cur_year, age), "F Survival"]
+            df_surival_age_0_4.loc[year, "M Survival"] += df_mortality_age_0_4.loc[(cur_year, age), "M Survival"]
+
+        df_surival_age_0_4.loc[year, "F Survival"] = df_surival_age_0_4.loc[year, "F Survival"] / 5
+        df_surival_age_0_4.loc[year, "M Survival"] = df_surival_age_0_4.loc[year, "M Survival"] / 5
+
+    df_surival_age_0_4.plot(y=["F Survival", "M Survival"], ax=axis_kids_survival, style=["--g", "--r"])
+    figure_kids_survival.suptitle("ZAD15 i 14- Przeżywalność dzieci urodzonych w danym roku")
+    axis_kids_survival.set_xlabel("Rok urodzenia")
+    axis_kids_survival.set_ylabel("Współczynnik przeżywalności [%]")
+    axis_kids_survival.legend(["Dziewczynki w pierwszym roku życia", "Chlopcy w pierwszym roku zycia",
+                               "Dziewczynki w pierwszych 5 latach zycia", "Chlopcy w pierwszych 5 latach zycia"],
+                              loc='lower right')
+    axis_kids_survival.grid(axis="both")
+
+
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
     df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
-
+    #
     print(f"Number of unique names: {task2(df_names)}")
 
     number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
@@ -581,9 +735,15 @@ def main():
 
     forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names, number_names_to_found=2)
 
-    df_mortality = task12("data/USA_ltper_1x1.sqlite")
+    df_mortality_F, df_mortality_M = task12("data/USA_ltper_1x1.sqlite")
 
-    # plt.show()
+    task13(df_mortality_F, df_mortality_M, df_names=df_names)
+    #
+    fig_task14, ax_task14 = task14(df_mortality_F, df_mortality_M)
+    #
+    task15(df_mortality_F, df_mortality_M, fig_task14, ax_task14)
+    #
+    plt.show()
 
 
 if __name__ == "__main__":
