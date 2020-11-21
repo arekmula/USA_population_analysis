@@ -440,21 +440,32 @@ def task10(dataframe: pd.DataFrame):
     return unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name,
 
 
-def task11(dataframe: pd.DataFrame, df_unisex_names=pd.DataFrame, number_names_to_found=3,
-           years_lower_range=(1880, 1920), years_upper_range=(2000, 2020)):
+def task11(dataframe: pd.DataFrame, df_unisex_names: pd.DataFrame, top_female_names, top_male_names,
+           number_names_to_found=3, years_lower_range=(1880, 1920), years_upper_range=(2000, 2020)):
     """
     Find most popular names that were female/male names and then became male/female names
+    :param top_male_names: top 1000 male names
+    :param top_female_names: top 1000 female names
     :param df_unisex_names: dataframe containing information only about unisex names
     :param years_upper_range: lower range of years for which F/M ratio is computed
     :param years_lower_range: upper range of years for which M/F ratio is computed
     :param number_names_to_found: number of names to be found
     :param dataframe: dataframe containing all data
-    :return: names with smallest standard deviation between sex and year range, but at the same time with quite big
-    number of names given
+    :return: names with that changed their sex during years
     """
+
     print("\nStarting TASK 11")
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
+
+    top_names = pd.DataFrame()
+    top_names["top female"] = top_female_names
+    top_names["top male"] = top_male_names
+    # Fill NaN with 0 to allow adding
+    top_names = top_names.fillna(0)
+    top_names["total"] = top_names["top female"] + top_names["top male"]
+    top_names = top_names.sort_values("total", ascending=False)
+    top_names = top_names.index.values
 
     # Fill NaN with 1 to allow dividing
     df_unisex_names = df_unisex_names.fillna(1)
@@ -468,76 +479,72 @@ def task11(dataframe: pd.DataFrame, df_unisex_names=pd.DataFrame, number_names_t
     years = np.concatenate((lower_years, upper_years))
 
     # Compute Female to Male ratio and Male to Female ratio in years (1880-1920, 2000-2020)
-    df_unisex_names.loc[(years,), "F/M"] = (df_unisex_names.loc[(years,), "F"]
-                                            / df_unisex_names.loc[(years,), "M"])
-    df_unisex_names.loc[(years,), "M/F"] = (df_unisex_names.loc[(years,), "M"]
-                                            / df_unisex_names.loc[(years,), "F"])
+    df_unisex_names.loc[(years,), "popularity"] = (df_unisex_names.loc[(years,), "M"]
+                                                   / (df_unisex_names.loc[(years,), "F"] +
+                                                      df_unisex_names.loc[(years,), "M"]))
+    # Create separate dataframe for lower and upper range
+    df_unisex_names_lower_range = df_unisex_names.loc[(lower_years,), :]
+    df_unisex_names_upper_range = df_unisex_names.loc[(upper_years,), :]
 
-    # Choose part of dataframe where F/M ratio is greater than M/F ratio in lower years
-    female_names_lower_years = (df_unisex_names[df_unisex_names["F/M"]
-                                                > df_unisex_names["M/F"]]).loc[(lower_years,), "F/M"]
-    # Choose part of dataframe where F/M ratio is greater than M/F ratio in lower years
-    male_names_upper_years = (df_unisex_names[df_unisex_names["F/M"]
-                                              < df_unisex_names["M/F"]]).loc[(upper_years,), "M/F"]
+    # Compute mean of popularity for each name in given range
+    df_unisex_names_lower_range = df_unisex_names_lower_range.swaplevel(0, 1)
+    df_unisex_names_lower_range = df_unisex_names_lower_range.sort_index()
+    df_unisex_names_lower_range = df_unisex_names_lower_range.groupby('name').mean()
 
-    # Sum F/M ratio per name in lower years range and M/F ratio per name in upper years
-    df_unisex_names_aggregated = pd.DataFrame(female_names_lower_years.groupby('name').sum())
-    df_unisex_names_aggregated["M/F"] = male_names_upper_years.groupby('name').sum()
+    df_unisex_names_upper_range = df_unisex_names_upper_range.swaplevel(0, 1)
+    df_unisex_names_upper_range = df_unisex_names_upper_range.sort_index()
+    df_unisex_names_upper_range = df_unisex_names_upper_range.groupby('name').mean()
 
-    # Sort dataframe by F/M ratio to choose strongly female names
-    df_unisex_names_sorted_FM = df_unisex_names_aggregated.sort_values(["F/M"], ascending=False)
-    # Get index of that sorted names
-    df_unisex_names_sorted_FM["F/M index"] = np.arange(0, len(df_unisex_names_sorted_FM))
-    # Sort the same dataframe by M/F ratio to choose strongly male names
-    df_unisex_names_sorted_MF = df_unisex_names_sorted_FM.sort_values(["M/F"], ascending=False)
-    # Get index of that sorted names
-    df_unisex_names_sorted_MF["M/F index"] = np.arange(0, len(df_unisex_names_sorted_MF))
-    # Calculate sum of that indexes. Then remove NaN
-    df_unisex_names_sorted_FM["index sum"] = (df_unisex_names_sorted_FM["F/M index"]
-                                              + df_unisex_names_sorted_MF["M/F index"])
-    df_unisex_names_sorted_FM = df_unisex_names_sorted_FM[df_unisex_names_sorted_FM["M/F"] > 0]
-    # Sort dataframe by index sum in ascending order. The smaller index sum then the more impact the name had in both
-    # sex. Choose 20 names with lowest index sum
-    df_unisex_names_sorted_FM = df_unisex_names_sorted_FM.sort_values("index sum").head(20)
+    # Select names with popularity coefficient greater than 0.7 or smaller than 0.3
+    df_unisex_names_lower_range = df_unisex_names_lower_range.loc[(df_unisex_names_lower_range["popularity"] > 0.7) |
+                                                                  (df_unisex_names_lower_range["popularity"] < 0.3), :]
+    df_unisex_names_upper_range = df_unisex_names_upper_range.loc[(df_unisex_names_upper_range["popularity"] > 0.7) |
+                                                                  (df_unisex_names_upper_range["popularity"] < 0.3), :]
 
-    # Compute sum between F/M and M/F then sort by highest sum, to distinguish names
-    # that had biggest change of popularity between sex.
-    # df_unisex_names_sorted_FM["sum"] = df_unisex_names_sorted_FM[["F/M", "M/F"]].sum(axis=1)
-    # df_unisex_names_sorted_FM = df_unisex_names_sorted_FM.sort_values("sum", ascending=False)
+    df_unisex_names_both_ranges = pd.DataFrame()
+    df_unisex_names_both_ranges["L popularity"] = df_unisex_names_lower_range["popularity"]
+    df_unisex_names_both_ranges["U popularity"] = df_unisex_names_upper_range["popularity"]
 
-    # Compute standard deviation between F/M and M/F then sort by smallest std dev, to distinguish names
-    # that were almost at the same level of popularity between sex.
-    df_unisex_names_sorted_FM["std_dev"] = df_unisex_names_sorted_FM[["F/M", "M/F"]].std(axis=1)
-    df_unisex_names_sorted_FM = df_unisex_names_sorted_FM.sort_values("std_dev", ascending=True)
-    forgotten_female_names = df_unisex_names_sorted_FM.index.values[:number_names_to_found]
-    print(f"{number_names_to_found} Najbardziej zapomniane imiona zenskie, ktore obecnie wystepuja jako meskie:"
-          f" {forgotten_female_names}")
+    # Select names that changed across years
+    df_unisex_names_both_ranges = df_unisex_names_both_ranges.loc[((df_unisex_names_both_ranges["L popularity"] > 0.7) &
+                                                                   (df_unisex_names_both_ranges["U popularity"] < 0.3))
+                                                                  |
+                                                                  ((df_unisex_names_both_ranges["U popularity"] > 0.7) &
+                                                                   (df_unisex_names_both_ranges["L popularity"] < 0.3)),
+                                                                  :]
+    unisex_names = df_unisex_names_both_ranges.index.values
+    most_popular_names_with_changed_sex = []
+    for name in top_names:
+        if name in unisex_names:
+            most_popular_names_with_changed_sex.append(name)
+        if len(most_popular_names_with_changed_sex) == number_names_to_found:
+            break
+
+    print(f"{number_names_to_found} najpopularniejsze imiona ktore zmienily swoja plec na przestrzeni lat"
+          f" {most_popular_names_with_changed_sex}")
 
     fig, ax = plt.subplots()
-    ax2 = ax.twinx()
     female_plot_styles = ['-b', '-g', '-r']
     male_plot_styles = ['--b', '--g', '--r']
-    legends_female = []
-    legends_male = []
-    for name, female_style, male_style in zip(forgotten_female_names, female_plot_styles, male_plot_styles):
+    legends = []
+    for name, female_style, male_style in zip(most_popular_names_with_changed_sex, female_plot_styles,
+                                              male_plot_styles):
         dataframe.loc[(name,), "F"].plot(ax=ax, style=female_style)
-        legends_female.append(f"{name} Female")
-        dataframe.loc[(name,), "M"].plot(ax=ax2, style=male_style)
-        legends_male.append(f"{name} Male")
+        legends.append(f"{name} Female")
+        dataframe.loc[(name,), "M"].plot(ax=ax, style=male_style)
+        legends.append(f"{name} Male")
 
-    ax.set_title('Zad 11 - Przebieg trendu 2 imion, które przez pewien czas były'
-                 ' żeńsko/męskie a nastepnie stały się męsko/żeńskie')
-    ax.legend(legends_female, loc='upper left')
+    ax.set_title(f'Zad 11 - Przebieg trendu {number_names_to_found} imion, które na przestrzeni lat zmieniły swoją'
+                 f' płeć')
+    ax.legend(legends, loc='upper left')
     ax.grid(axis='both')
     ax.minorticks_on()
-    ax.set_ylabel("Liczba nadanych imion żeńskich")
-    ax2.set_ylabel("Liczba nadanych imion męskich")
-    ax2.legend(legends_male, loc='upper right')
+    ax.set_ylabel("Liczba nadanych imion")
     ax.set_xlabel("Rok")
     ax.set_xlim(left=np.min(dataframe.index.get_level_values(1).values),
                 right=np.max(dataframe.index.get_level_values(1).values))
 
-    return forgotten_female_names
+    return unisex_names
 
 
 def task12(database_path: str):
@@ -548,7 +555,7 @@ def task12(database_path: str):
 
     """
     print("\nStarting TASK 12")
-    COLUMNS_NAME = "Year, Age, lx, dx"
+    COLUMNS_NAME = "Year, Age, lx, dx, LLx"
 
     try:
         conn = sqlite3.connect(database_path)
@@ -570,7 +577,7 @@ def task12(database_path: str):
         return None
 
 
-def task13(df_mortality_female: pd.DataFrame, df_mortality_male, df_names: pd.DataFrame):
+def task13(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame):
     """
     Plot population growth
     :param df_mortality_male: dataframe contaning male deaths per year and age
@@ -581,27 +588,34 @@ def task13(df_mortality_female: pd.DataFrame, df_mortality_male, df_names: pd.Da
     print("\nStarting TASK 13")
     df_natural_increase = pd.DataFrame()
 
-    df_names_year = df_names.groupby('year').sum()
-    # # Get only years from 1959 to 2017
-    df_names_year = df_names_year.loc[1959:2017, ["F", "M"]]
-    # Save births in df_natural_increase dataframe
-    df_natural_increase["F births"] = df_names_year["F"]
-    df_natural_increase["M births"] = df_names_year["M"]
-    # Save deaths in df_natural_increase dataframe
+    # Save deaths per year in df_natural_increase dataframe
     df_natural_increase["F deaths"] = (df_mortality_female["dx"].groupby("Year").sum()).astype(int)
     df_natural_increase["M deaths"] = (df_mortality_male["dx"].groupby("Year").sum()).astype(int)
+
+    # Swap levels to make an "Age" column first level
+    df_mortality_female = df_mortality_female.swaplevel(0, 1)
+    df_mortality_female = df_mortality_female.sort_index()
+    df_mortality_male = df_mortality_male.swaplevel(0, 1)
+    df_mortality_male = df_mortality_male.sort_index()
+
+    # Save births in df_natural_increase dataframe
+    df_natural_increase["F births"] = (df_mortality_female.loc[(0,), "LLx"]).astype(int)
+    df_natural_increase["M births"] = (df_mortality_male.loc[(0,), "LLx"]).astype(int)
+
     # Calculate natural increase
     df_natural_increase["F increase"] = df_natural_increase["F births"] - df_natural_increase["F deaths"]
     df_natural_increase["M increase"] = df_natural_increase["M births"] - df_natural_increase["M deaths"]
 
-    # Calculate population
-    # population = df_mortality["lx"].groupby("Year").sum()
-    # df_natural_increase["population"] = population
+    # Calculate population - deprecated
+    # population_female = df_mortality_female["LLx"].groupby("Year").sum()
+    # df_natural_increase["population female"] = population_female
+    # population_male = df_mortality_male["LLx"].groupby("Year").sum()
+    # df_natural_increase["population male"] = population_male
 
     fig, ax = plt.subplots(1, 1)
     df_natural_increase.plot(y=["F increase", "M increase"], ax=ax)
     fig.suptitle("ZAD13 - Przyrost naturalny")
-    ax.set_xlabel("Rok urodzenia")
+    ax.set_xlabel("Rok ")
     ax.set_ylabel("Przyrost naturalny")
     ax.set_xlim(right=2017, left=1959)
     ax.legend(["Kobiety", "Mezczyzni"])
@@ -624,9 +638,9 @@ def task14(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame):
     df_mortality_female = df_mortality_female.sort_index()
     df_mortality_male = df_mortality_male.swaplevel(0, 1)
     df_mortality_male = df_mortality_male.sort_index()
-    # Choose only age = 0 and columns lx and dx
-    df_mortality_zero_age[["F lx", "F dx"]] = df_mortality_female.loc[(0,), ["lx", "dx"]]
-    df_mortality_zero_age[["M lx", "M dx"]] = df_mortality_male.loc[(0,), ["lx", "dx"]]
+    # Choose only age = 0 and columns LLx and dx
+    df_mortality_zero_age[["F lx", "F dx"]] = df_mortality_female.loc[(0,), ["LLx", "dx"]]
+    df_mortality_zero_age[["M lx", "M dx"]] = df_mortality_male.loc[(0,), ["LLx", "dx"]]
 
     df_mortality_zero_age["F Survival"] = ((df_mortality_zero_age["F lx"] - df_mortality_zero_age["F dx"])
                                            / df_mortality_zero_age["F lx"]) * 100
@@ -666,8 +680,8 @@ def task15(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame,
     df_mortality_male = df_mortality_male.sort_index()
 
     # Get only data from 0-5 age
-    df_mortality_age_0_4[["F lx", "F dx"]] = df_mortality_female.loc[([0, 1, 2, 3, 4],), ["lx", "dx"]]
-    df_mortality_age_0_4[["M lx", "M dx"]] = df_mortality_male.loc[([0, 1, 2, 3, 4],), ["lx", "dx"]]
+    df_mortality_age_0_4[["F lx", "F dx"]] = df_mortality_female.loc[([0, 1, 2, 3, 4],), ["LLx", "dx"]]
+    df_mortality_age_0_4[["M lx", "M dx"]] = df_mortality_male.loc[([0, 1, 2, 3, 4],), ["LLx", "dx"]]
 
     df_mortality_age_0_4 = df_mortality_age_0_4.swaplevel(0, 1)
     df_mortality_age_0_4 = df_mortality_age_0_4.sort_index(0, 1)
@@ -708,7 +722,7 @@ def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
     df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
-    #
+
     print(f"Number of unique names: {task2(df_names)}")
 
     number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
@@ -733,16 +747,18 @@ def main():
     print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
           f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
 
-    forgotten_female_unisex_names = task11(dataframe=df_names, df_unisex_names=df_unisex_names, number_names_to_found=2)
+    task11(dataframe=df_names, df_unisex_names=df_unisex_names,
+           number_names_to_found=2, top_female_names=top_female_names,
+           top_male_names=top_male_names)
 
     df_mortality_F, df_mortality_M = task12("data/USA_ltper_1x1.sqlite")
 
-    task13(df_mortality_F, df_mortality_M, df_names=df_names)
-    #
+    task13(df_mortality_F, df_mortality_M)
+
     fig_task14, ax_task14 = task14(df_mortality_F, df_mortality_M)
-    #
+
     task15(df_mortality_F, df_mortality_M, fig_task14, ax_task14)
-    #
+
     plt.show()
 
 
