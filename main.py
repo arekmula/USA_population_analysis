@@ -436,7 +436,7 @@ def task10(dataframe: pd.DataFrame):
     dataframe = dataframe.sort_index()
 
     print("Slicing dataframe. This might take a while!")
-    df_unisex_names = (dataframe.loc[(unisex_names,),])  # TODO: This is so time consuming
+    df_unisex_names = (dataframe.loc[(unisex_names,), ])  # TODO: This is so time consuming
     unisex_names_sum = df_unisex_names.groupby('name').sum()
     most_popular_female_unisex_name = unisex_names_sum.idxmax()["F"]
     most_popular_male_unisex_name = unisex_names_sum.idxmax()["M"]
@@ -585,7 +585,6 @@ def task13(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame):
     """
     Plot population growth
     :param df_mortality_male: dataframe contaning male deaths per year and age
-    :param df_names: dataframe containing number of given names to births
     :param df_mortality_female: dataframe contaning female deaths per year and age
     :return:
     """
@@ -727,44 +726,44 @@ def main():
     # Dataframe with all names and years
     df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
 
-    # print(f"Number of unique names: {task2(df_names)}")
-    #
-    # number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
-    # print(f"Number of unique men names: {number_of_unique_men_names}")
-    # print(f"Number of unique female names: {number_of_unique_female_names}")
-    #
-    # df_names_freq = task4(df_names)
-    #
-    # year_biggest_ratio, year_smallest_ratio = task5(df_names)
-    # print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
-    #       f" smallest difference: {year_smallest_ratio}")
-    #
-    # top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
-    #
-    # task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
-    #       annotate_years=[1940, 1980, 2019])
-    #
-    # year_biggest_difference_in_diversity = task8(dataframe=df_names, top_female_names=top_female_names,
-    #                                              top_male_names=top_male_names)
+    print(f"Number of unique names: {task2(df_names)}")
+
+    number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
+    print(f"Number of unique men names: {number_of_unique_men_names}")
+    print(f"Number of unique female names: {number_of_unique_female_names}")
+
+    df_names_freq = task4(df_names)
+
+    year_biggest_ratio, year_smallest_ratio = task5(df_names)
+    print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
+          f" smallest difference: {year_smallest_ratio}")
+
+    top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
+
+    task7(dataframe=df_names, top_female_names=top_female_names, top_male_names=top_male_names,
+          annotate_years=[1940, 1980, 2019])
+
+    year_biggest_difference_in_diversity = task8(dataframe=df_names, top_female_names=top_female_names,
+                                                 top_male_names=top_male_names)
 
     task9(dataframe_unpivoted=dataframe_no_pivot, distinct_years=[1910, 1960, 2015])
 
-    # unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
-    # print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
-    #       f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
-    #
-    # task11(dataframe=df_names, df_unisex_names=df_unisex_names,
-    #        number_names_to_found=2, top_female_names=top_female_names,
-    #        top_male_names=top_male_names)
-    #
-    # df_mortality_F, df_mortality_M = task12("data/USA_ltper_1x1.sqlite")
-    #
-    # task13(df_mortality_F, df_mortality_M)
-    #
-    # fig_task14, ax_task14 = task14(df_mortality_F, df_mortality_M)
-    #
-    # task15(df_mortality_F, df_mortality_M, fig_task14, ax_task14)
-    #
+    unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
+    print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
+          f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
+
+    task11(dataframe=df_names, df_unisex_names=df_unisex_names,
+           number_names_to_found=2, top_female_names=top_female_names,
+           top_male_names=top_male_names)
+
+    df_mortality_F, df_mortality_M = task12("data/USA_ltper_1x1.sqlite")
+
+    task13(df_mortality_F, df_mortality_M)
+
+    fig_task14, ax_task14 = task14(df_mortality_F, df_mortality_M)
+
+    task15(df_mortality_F, df_mortality_M, fig_task14, ax_task14)
+
     plt.show()
 
 
