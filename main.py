@@ -729,7 +729,7 @@ def task15(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame,
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
-    df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
+    df_names, dataframe_no_pivot = task1(folder_path="names", dataframe=df_names)
 
     print(f"Number of unique names: {task2(df_names)}")
 
@@ -761,7 +761,7 @@ def main():
            number_names_to_found=2, top_female_names=top_female_names,
            top_male_names=top_male_names)
 
-    df_mortality_F, df_mortality_M = task12("data/USA_ltper_1x1.sqlite")
+    df_mortality_F, df_mortality_M = task12("USA_ltper_1x1.sqlite")
 
     task13(df_mortality_F, df_mortality_M)
 
