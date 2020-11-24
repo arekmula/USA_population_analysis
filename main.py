@@ -331,9 +331,14 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
                                         columns=["sex"], aggfunc=np.sum)
     df_last_characters = df_last_characters.fillna(0).astype(int)
 
-    # Compute normalized value for each year and sex
+    # Create temporary dataframe with both columns having total births per year to avoid dividing later
+    df_total_births_per_year = pd.DataFrame()
+    df_total_births_per_year["F"] = (df_last_characters.groupby('year').sum()).sum(axis=1)
+    df_total_births_per_year["M"] = (df_last_characters.groupby('year').sum()).sum(axis=1)
+
+    # Compute normalized value for each year and sex. The normalization is given by dividing by total births per year
     df_last_characters[["F normalized", "M normalized"]] = (df_last_characters[["F", "M"]]
-                                                            / df_last_characters.groupby('year').sum()) * 100
+                                                            / df_total_births_per_year) * 100
 
     # Get dataframe with years that you want to plot
     df_last_characters_distinct_years = pd.DataFrame(df_last_characters.loc[distinct_years])
@@ -352,11 +357,11 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
     fig.suptitle("Zad9 - Ostatnia litera imienia:")
     ax[0].set_title("W imionach kobiecych")
     ax[0].set_xlabel("Ostatnia litera imienia")
-    ax[0].set_ylabel("Popularnosc litery [%]")
+    ax[0].set_ylabel("Popularnosc litery wśród nadanych imion obu płci [%]")
 
     ax[1].set_title("W imionach meskich")
     ax[1].set_xlabel("Ostatnia litera imienia")
-    ax[1].set_ylabel("Popularnosc litery [%]")
+    ax[1].set_ylabel("Popularnosc litery wśród nadanych imion obu płci [%]")
 
     # Get list of all last characters from dataframe index
     last_characters = df_last_characters_distinct_years.index.get_level_values(0).unique()
