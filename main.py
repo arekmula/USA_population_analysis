@@ -100,17 +100,18 @@ def task5(dataframe: pd.DataFrame):
     # Calculate sum of births per year and sex
     birth_per_year_per_sex = dataframe[["F", "M"]].groupby('year').sum()
     birth_per_year_per_sex["total"] = birth_per_year_per_sex["F"] + birth_per_year_per_sex["M"]
+    birth_per_year_per_sex["difference"] = np.abs(birth_per_year_per_sex["F"] - birth_per_year_per_sex["M"])
     birth_per_year_per_sex["Female to Male birth ratio"] = birth_per_year_per_sex["F"] / birth_per_year_per_sex["M"]
 
     fig, ax = plt.subplots(2, 1)
     fig.suptitle("Zadanie 5")
 
-    birth_per_year_per_sex.plot(y=["total"], ax=ax[0])
+    birth_per_year_per_sex.plot(y=["F", "M"], ax=ax[0])
     ax[0].ticklabel_format(style="plain", axis='y')  # Disable scientific notation
     ax[0].set_ylabel("Liczba narodzin")
     ax[0].set_xlabel("Rok")
     ax[0].set_title('Liczba narodzin na przestrzeni lat w USA')
-    ax[0].get_legend().remove()
+    ax[0].legend(["Dziewczynki", "Chlopcy"])
     ax[0].minorticks_on()
     ax[0].grid(axis="both")
     ax[0].set_xlim(left=np.min(birth_per_year_per_sex.index.values), right=np.max(birth_per_year_per_sex.index.values))
@@ -121,25 +122,29 @@ def task5(dataframe: pd.DataFrame):
     ax[1].set_title('Stosunek liczby narodzin dziewczynek do chłopców na przestrzeni lat w USA')
     ax[1].set_ylabel("Stosunek liczby narodzin dziewczynek do chłopców")
     ax[1].set_xlabel("Rok")
-    ax[1].legend(["Female to Male birth ratio", "Reference"])
+    ax[1].legend(["F/M birth ratio", "Referencja"])
     ax[1].minorticks_on()
     ax[1].grid(axis="x")
     ax[1].set_xlim(left=np.min(birth_per_year_per_sex.index.values), right=np.max(birth_per_year_per_sex.index.values))
 
-    # Calculate in which year the ratio was biggest:
-    biggest_ratio_index = np.argmax(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
-                                           - birth_per_year_per_sex["Female to Male birth ratio"]))
-    smallest_ratio_index = np.argmin(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
-                                            - birth_per_year_per_sex["Female to Male birth ratio"]))
+    # Calculate in which year the difference between number of female births and male births was biggest and smallest:
+    biggest_ratio_index = np.argmax(birth_per_year_per_sex["difference"])
+    smallest_ratio_index = np.argmin(birth_per_year_per_sex["difference"])
 
-    ax[1].annotate(f"Najwieksza roznica: {birth_per_year_per_sex.index[biggest_ratio_index]}",
-                   xy=(birth_per_year_per_sex.index[biggest_ratio_index], ax[1].get_ylim()[0]),
-                   xytext=(birth_per_year_per_sex.index[biggest_ratio_index], ax[1].get_ylim()[0] + 0.5),
-                   arrowprops=dict(facecolor='black', arrowstyle="-"))
-    ax[1].annotate(f"Najmniejsza roznica: {birth_per_year_per_sex.index[smallest_ratio_index]}",
-                   xy=(birth_per_year_per_sex.index[smallest_ratio_index], ax[1].get_ylim()[0]),
-                   xytext=(birth_per_year_per_sex.index[smallest_ratio_index], ax[1].get_ylim()[0] + 0.8),
-                   arrowprops=dict(facecolor='black', arrowstyle="-"))
+    # Calculate in which year the ratio of female births to male births was biggest:
+    # biggest_ratio_index = np.argmax(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
+    #                                        - birth_per_year_per_sex["Female to Male birth ratio"]))
+    # smallest_ratio_index = np.argmin(np.abs(np.ones(len(birth_per_year_per_sex["Female to Male birth ratio"]))
+    #                                         - birth_per_year_per_sex["Female to Male birth ratio"]))
+
+    # ax[1].annotate(f"Najwieksza roznica: {birth_per_year_per_sex.index[biggest_ratio_index]}",
+    #                xy=(birth_per_year_per_sex.index[biggest_ratio_index], ax[1].get_ylim()[0]),
+    #                xytext=(birth_per_year_per_sex.index[biggest_ratio_index], ax[1].get_ylim()[0] + 0.5),
+    #                arrowprops=dict(facecolor='black', arrowstyle="-"))
+    # ax[1].annotate(f"Najmniejsza roznica: {birth_per_year_per_sex.index[smallest_ratio_index]}",
+    #                xy=(birth_per_year_per_sex.index[smallest_ratio_index], ax[1].get_ylim()[0]),
+    #                xytext=(birth_per_year_per_sex.index[smallest_ratio_index], ax[1].get_ylim()[0] + 0.8),
+    #                arrowprops=dict(facecolor='black', arrowstyle="-"))
 
     return birth_per_year_per_sex.index[biggest_ratio_index], birth_per_year_per_sex.index[smallest_ratio_index]
 
@@ -165,12 +170,14 @@ def task6(dataframe: pd.DataFrame, number_of_top_popular_names: int):
 
     # Get the most popular names across all years
     top_female_names_across_all_years = (female_names_sorted.groupby('name').sum()).sort_values(ascending=False)
+    print(f"Zad6: Top 1000 najpopularniejszych imion kobiecych: {top_female_names_across_all_years}")
     top_female_names_across_all_years = top_female_names_across_all_years.head(number_of_top_popular_names)
     top_male_names_across_all_years = (male_names_sorted.groupby('name').sum()).sort_values(ascending=False)
+    print(f"Zad6: Top 1000 najpopularniejszych imion meskich: {top_male_names_across_all_years}")
     top_male_names_across_all_years = top_male_names_across_all_years.head(number_of_top_popular_names)
 
-    print(f"Most popular female name: {top_female_names_across_all_years.index[0]}. Most popular male name:"
-          f" {top_male_names_across_all_years.index[0]}")
+    print(f"Zad6: Najpopularniejsze imię kobiece: {top_female_names_across_all_years.index[0]}."
+          f" Najpopularniejsze imię męskie: {top_male_names_across_all_years.index[0]}")
     return top_female_names_across_all_years, top_male_names_across_all_years
 
 
@@ -277,7 +284,7 @@ def task8(dataframe: pd.DataFrame, top_female_names: pd.Series, top_male_names: 
                                            df_year_changes["Top 1000 M names %"])
     # Get a year with biggest difference between male and female diversity
     year_biggest_difference_in_diversity = df_year_changes.idxmax()["Difference"]
-    print(f"Rok z najwieksza roznica w roznorodnosci miedzy imionami meskimi a zenskimi:"
+    print(f"Zad8: Rok z najwieksza roznica w roznorodnosci miedzy imionami meskimi a zenskimi:"
           f" {year_biggest_difference_in_diversity}")
 
     fig, ax = plt.subplots(1, 1)
@@ -331,9 +338,14 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
                                         columns=["sex"], aggfunc=np.sum)
     df_last_characters = df_last_characters.fillna(0).astype(int)
 
-    # Compute normalized value for each year and sex
+    # Create temporary dataframe with both columns having total births per year to avoid dividing later
+    df_total_births_per_year = pd.DataFrame()
+    df_total_births_per_year["F"] = (df_last_characters.groupby('year').sum()).sum(axis=1)
+    df_total_births_per_year["M"] = (df_last_characters.groupby('year').sum()).sum(axis=1)
+
+    # Compute normalized value for each year and sex. The normalization is given by dividing by total births per year
     df_last_characters[["F normalized", "M normalized"]] = (df_last_characters[["F", "M"]]
-                                                            / df_last_characters.groupby('year').sum()) * 100
+                                                            / df_total_births_per_year) * 100
 
     # Get dataframe with years that you want to plot
     df_last_characters_distinct_years = pd.DataFrame(df_last_characters.loc[distinct_years])
@@ -352,11 +364,11 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
     fig.suptitle("Zad9 - Ostatnia litera imienia:")
     ax[0].set_title("W imionach kobiecych")
     ax[0].set_xlabel("Ostatnia litera imienia")
-    ax[0].set_ylabel("Popularnosc litery [%]")
+    ax[0].set_ylabel("Popularnosc litery wśród nadanych imion obu płci [%]")
 
     ax[1].set_title("W imionach meskich")
     ax[1].set_xlabel("Ostatnia litera imienia")
-    ax[1].set_ylabel("Popularnosc litery [%]")
+    ax[1].set_ylabel("Popularnosc litery wśród nadanych imion obu płci [%]")
 
     # Get list of all last characters from dataframe index
     last_characters = df_last_characters_distinct_years.index.get_level_values(0).unique()
@@ -381,8 +393,10 @@ def task9(dataframe_unpivoted: pd.DataFrame, distinct_years: list, stacked=False
         df_year_difference.loc[male_char_index, "M normalized"] = 0
         male_chars_biggest_difference.append(male_char_index)
 
-    print(f"Najwiekszą zmianę dla imion kobiecych odnotowano dla liter: {female_chars_biggest_difference}")
-    print(f"Najwiekszą zmianę dla imion meskich odnotowano dla liter: {male_chars_biggest_difference}")
+    print(f"Zad9: Najwiekszą zmianę między rokiem 1910 a 2015 dla imion kobiecych odnotowano dla liter:"
+          f" {female_chars_biggest_difference}")
+    print(f"Zad9: Najwiekszą zmianę między rokiem 1910 a 2015 dla imion meskich odnotowano dla liter:"
+          f" {male_chars_biggest_difference}")
 
     fig, ax = plt.subplots(2, 1)
     fig.suptitle("Zad9 - Popularność ostatniej litery imienia:")
@@ -430,7 +444,7 @@ def task10(dataframe: pd.DataFrame):
     # unisex names first
     df_names_count = (dataframe.groupby('name').count()).astype(int)
     unisex_names = pd.DataFrame(df_names_count.loc[(df_names_count["F"] > 0) & (df_names_count["M"] > 0)]).index.values
-    print(f"Imiona unisex: {unisex_names}")
+    print(f"Zad10: Imiona unisex: {unisex_names}")
 
     dataframe = dataframe.swaplevel(0, 1)
     dataframe = dataframe.sort_index()
@@ -440,6 +454,8 @@ def task10(dataframe: pd.DataFrame):
     unisex_names_sum = df_unisex_names.groupby('name').sum()
     most_popular_female_unisex_name = unisex_names_sum.idxmax()["F"]
     most_popular_male_unisex_name = unisex_names_sum.idxmax()["M"]
+    print(f"Zad10: Najpopularniejsze imie żeńskie: {most_popular_female_unisex_name}")
+    print(f"Zad10: Najpopularniejsze imie męskie: {most_popular_male_unisex_name}")
 
     return unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name,
 
@@ -724,19 +740,21 @@ def task15(df_mortality_female: pd.DataFrame, df_mortality_male: pd.DataFrame,
 def main():
     df_names = pd.DataFrame(columns=["year", "name", "sex", "count"])
     # Dataframe with all names and years
-    df_names, dataframe_no_pivot = task1(folder_path="data/names", dataframe=df_names)
+    df_names, dataframe_no_pivot = task1(folder_path="names", dataframe=df_names)
 
-    print(f"Number of unique names: {task2(df_names)}")
+    print(f"Zad2: Nadano {task2(df_names)} unikalnych imion")
 
     number_of_unique_men_names, number_of_unique_female_names = task3(dataframe=df_names)
-    print(f"Number of unique men names: {number_of_unique_men_names}")
-    print(f"Number of unique female names: {number_of_unique_female_names}")
+    print(f"Zad3: Unikalne imiona meskie: {number_of_unique_men_names}")
+    print(f"Zad3: Unikalne imiona zenskie: {number_of_unique_female_names}")
 
     df_names_freq = task4(df_names)
 
     year_biggest_ratio, year_smallest_ratio = task5(df_names)
-    print(f"Year with biggest difference between birth of female and male: {year_biggest_ratio} and year with the"
-          f" smallest difference: {year_smallest_ratio}")
+    print(f"Zad5: Rok w ktorym zanotowano najwiekszą różnicę w liczbie narodzin dziewczynek i chlopcow: "
+          f"{year_biggest_ratio}."
+          f" Rok w ktorym zanotowano najmniejsza roznice w liczbie narodzin dziewczynek i chlopcow:"
+          f" {year_smallest_ratio}")
 
     top_female_names, top_male_names = task6(dataframe=df_names, number_of_top_popular_names=1000)
 
@@ -749,14 +767,12 @@ def main():
     task9(dataframe_unpivoted=dataframe_no_pivot, distinct_years=[1910, 1960, 2015])
 
     unisex_names, df_unisex_names, most_popular_female_unisex_name, most_popular_male_unisex_name = task10(df_names)
-    print(f"Najpopularniejsze żeńskie imie wystepujace jako męskie: {most_popular_female_unisex_name}.\n"
-          f"Najpopularniejsze męskie imie występujące jako żeńskie: {most_popular_male_unisex_name}.")
 
     task11(dataframe=df_names, df_unisex_names=df_unisex_names,
            number_names_to_found=2, top_female_names=top_female_names,
            top_male_names=top_male_names)
 
-    df_mortality_F, df_mortality_M = task12("data/USA_ltper_1x1.sqlite")
+    df_mortality_F, df_mortality_M = task12("USA_ltper_1x1.sqlite")
 
     task13(df_mortality_F, df_mortality_M)
 
